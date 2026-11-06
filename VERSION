@@ -706,3 +706,99 @@ FEATURE PLAN
       "from ytalexa" in the output
     * python 3.14 on the reporting device passed the 3.11 gate
       correctly, that part was fine
+
+
+0.4.0 - 2026-11-07
+------------------
+
+  first real Echo attempt. The tunnel worked on the first try.
+  The skill did not run at all, and the reason was in the
+  interaction model, not the server.
+
+  what actually happened
+
+    * the console transcript looked like a conversation. Say
+      "सुरीली पेटी खोलो" under the old name and Alexa replied
+      "आप क्या सुनना चाहते हैं?", then the song name drew an
+      Amazon Music Unlimited advert.
+    * both of those replies were Alexa's, not ours. The Test
+      tab's JSON Input and JSON Output panels were empty and
+      Skill Invocations listed nothing, which means the
+      endpoint was never called once.
+    * the old invocation name was "मेरा गाना", which means "my
+      song". "अलेक्सा, मेरा गाना खोलो" parses as "open my
+      song", so Alexa's built in music domain claimed it
+      first. Amazon's naming rules say a name must not create
+      confusion with existing Alexa features; two words is
+      necessary but not sufficient, and I had only checked the
+      word count.
+    * the server was healthy the whole time. A POST to
+      /alexa over the funnel returns the signature error it
+      should, with server: ytalexa in the headers.
+
+  fixed
+
+    * invocation name is now "सुरीली पेटी", melodious box. It
+      is deliberately not a word for song, music or radio, so
+      nothing else wants the utterance.
+    * check.sh now rejects an invocation name that is one word
+      or that contains गाना, संगीत, music, song or radio. The
+      rule that was only in my head is in CI now.
+
+  second bug behind the first
+
+    * even with the name fixed, the two turn flow could not
+      have worked. AMAZON.SearchQuery only fills from an
+      utterance that carries a carrier phrase, so a bare "लग
+      जा गले" after the welcome prompt matches no sample and
+      falls through.
+    * the fix is Dialog.ElicitSlot. When the skill elicits the
+      query slot by name, Alexa biases recognition toward that
+      slot and the whole reply fills it, carrier phrase or
+      not.
+    * ElicitSlot errors unless the model carries a dialog
+      section, and ours had none. Added dialog.intents for
+      PlayIntent with elicitationRequired on query,
+      delegationStrategy SKILL_RESPONSE so the handler stays
+      in charge, and an Elicit.Slot.Query prompt.
+    * every place that used to ask a question and wait now
+      elicits instead: launch, help, fallback, empty slot, no
+      search result, next or resume with an empty queue.
+    * ax_rsp omits shouldEndSession when it is None, because a
+      response carrying a Dialog directive must not pin the
+      session either way. Callers that pass True or False are
+      unchanged.
+
+  checked by hand
+
+    * the funnel endpoint answers over https with our server
+      header, and rejects an unsigned POST
+    * the elicit response has the directive, the slot stub and
+      no shouldEndSession key, and no stale slot value
+    * ax_rsp still emits shouldEndSession for ordinary replies
+    * the model's elicitation prompt id resolves to a defined
+      prompt with at least one variation
+    * selftest is 93 assertions, up from 79
+    * full check.sh passes
+
+  known weak spots
+
+    * ElicitSlot filling an AMAZON.SearchQuery slot from a
+      bare utterance is behaviour Amazon's docs imply but
+      never state outright. It is the standard workaround and
+      I expect it to work, but this is the one part of this
+      release I cannot prove from the documentation. If it
+      misses, the one shot form with a carrier phrase is the
+      guaranteed path and already works:
+      "अलेक्सा, सुरीली पेटी से लग जा गले बजाओ".
+    * nothing downstream of invocation is proven yet. No real
+      Echo has fetched audio from this server, so the format,
+      the signed url and the radio queue are all still
+      untested against hardware.
+
+  not done, on purpose
+
+    * no en-IN interaction model. Adding one doubles what has
+      to be rebuilt for every change and she speaks Hindi.
+    * no name free invocation. It needs certification that a
+      scraping skill will not get.

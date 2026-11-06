@@ -1,3 +1,4 @@
+import io
 import os
 import sys
 import tempfile
@@ -8,6 +9,7 @@ sys.path.insert(0, os.path.join(ROOT, "src"))
 
 os.environ["YTA_HOME"] = tempfile.mkdtemp(prefix="ytatest")
 
+import alexa as ax
 import alexa_sig as sg
 import audio as au
 import cfg
@@ -221,6 +223,57 @@ def t_sig():
     ok("junk stamp", sg.sg_ts_ok("not-a-time"), -1)
 
 
+def t_elicit():
+    grp("elicit slot dialog")
+    import json
+    r = ax.ax_ask("hi-IN", "welcome")
+    b = json.loads(r["body"])["response"]
+    ok("session key absent",
+       "shouldEndSession" in b, False)
+    ok("has speech", b["outputSpeech"]["text"] != "", True)
+    ok("has reprompt",
+       b["reprompt"]["outputSpeech"]["text"] != "", True)
+    d = b["directives"][0]
+    ok("directive type", d["type"], "Dialog.ElicitSlot")
+    ok("slot to elicit", d["slotToElicit"], ax.AX_SLOT)
+    ok("updated intent", d["updatedIntent"]["name"],
+       ax.AX_INTENT)
+    ok("slot stub present",
+       ax.AX_SLOT in d["updatedIntent"]["slots"], True)
+    ok("no stale value",
+       "value" in d["updatedIntent"]["slots"][ax.AX_SLOT],
+       False)
+    e = ax.ax_rsp("x", None, True, None)
+    eb = json.loads(e["body"])["response"]
+    ok("end still emitted", eb["shouldEndSession"], True)
+    mp = os.path.join(ROOT, "docs",
+                      "interaction-hi-IN.json")
+    m = json.load(io.open(mp, encoding="utf-8"))["interactionModel"]
+    dlg = m["dialog"]["intents"][0]
+    ok("dialog intent", dlg["name"], ax.AX_INTENT)
+    sl = dlg["slots"][0]
+    ok("elicitation required", sl["elicitationRequired"], True)
+    pid = sl["prompts"]["elicitation"]
+    ids = []
+    i = 0
+    while i < len(m["prompts"]):
+        ids.append(m["prompts"][i]["id"])
+        i = i + 1
+    ok("prompt id resolves", pid in ids, True)
+    inv = m["languageModel"]["invocationName"]
+    ok("two word name", len(inv.split()) >= 2, True)
+    bad = ["\u0917\u093e\u0928\u093e",
+           "\u0938\u0902\u0917\u0940\u0924",
+           "music", "song"]
+    hit = 0
+    i = 0
+    while i < len(bad):
+        if bad[i] in inv.lower():
+            hit = 1
+        i = i + 1
+    ok("name avoids music words", hit, 0)
+
+
 def t_cfg():
     grp("config")
     c = cfg.cfg_load()
@@ -264,6 +317,7 @@ def main():
     t_queue()
     t_cookies()
     t_sig()
+    t_elicit()
     t_cfg()
     t_speak()
     sys.stdout.write("\n%s\n" % ("-" * 46))

@@ -96,7 +96,8 @@ def ax_rsp(speech, reprompt, end, dirs):
         b["reprompt"] = {"outputSpeech":
                          {"type": "PlainText",
                           "text": reprompt}}
-    b["shouldEndSession"] = end
+    if end != None:
+        b["shouldEndSession"] = end
     if dirs != None:
         b["directives"] = dirs
     r["version"] = "1.0"
@@ -120,6 +121,27 @@ def ax_play_dir(url, token, off, behav, prev, title, sub):
     d["playBehavior"] = behav
     d["audioItem"] = item
     return d
+
+
+def ax_elicit_dir():
+    sl = {}
+    sl[AX_SLOT] = {"name": AX_SLOT,
+                   "confirmationStatus": "NONE"}
+    it = {}
+    it["name"] = AX_INTENT
+    it["confirmationStatus"] = "NONE"
+    it["slots"] = sl
+    d = {}
+    d["type"] = "Dialog.ElicitSlot"
+    d["slotToElicit"] = AX_SLOT
+    d["updatedIntent"] = it
+    return d
+
+
+def ax_ask(loc, key):
+    return ax_rsp(sp.sp_get(loc, key),
+                  sp.sp_get(loc, "reprompt"), None,
+                  [ax_elicit_dir()])
 
 
 def ax_stop_dir():
@@ -182,8 +204,7 @@ def ax_start(req, user, st, idx, off, c, loc, behav):
 
 
 def ax_launch(req, user, c, loc):
-    return ax_rsp(sp.sp_get(loc, "welcome"),
-                  sp.sp_get(loc, "reprompt"), False, None)
+    return ax_ask(loc, "welcome")
 
 
 def ax_slot(rq):
@@ -199,8 +220,7 @@ def ax_slot(rq):
 def ax_do_play(req, user, rq, c, loc):
     q = ax_slot(rq)
     if q == "":
-        return ax_rsp(sp.sp_get(loc, "huh"),
-                      sp.sp_get(loc, "reprompt"), False, None)
+        return ax_ask(loc, "huh")
     rows, err = ys.ys_search(q, c["search_lang"],
                              c["search_region"],
                              c["search_want"], c["min_dur"],
@@ -208,8 +228,7 @@ def ax_do_play(req, user, rq, c, loc):
     if err != None:
         return ax_rsp(sp.sp_get(loc, "failed"), None, True, None)
     if rows == None or len(rows) == 0:
-        return ax_rsp(sp.sp_get(loc, "notfound"),
-                      sp.sp_get(loc, "reprompt"), False, None)
+        return ax_ask(loc, "notfound")
     seed = rows[0]
     radio, rerr = yr.yr_radio(seed["vid"], c["queue_len"])
     items = yr.yr_merge(rows, radio, c["queue_len"])
@@ -222,8 +241,7 @@ def ax_do_play(req, user, rq, c, loc):
 def ax_do_step(req, user, c, loc, delta):
     st = qu.qu_load(user)
     if len(st["items"]) == 0:
-        return ax_rsp(sp.sp_get(loc, "welcome"),
-                      sp.sp_get(loc, "reprompt"), False, None)
+        return ax_ask(loc, "welcome")
     idx = st["idx"] + delta
     if idx < 0:
         idx = 0
@@ -237,8 +255,7 @@ def ax_do_step(req, user, c, loc, delta):
 def ax_do_resume(req, user, c, loc):
     st = qu.qu_load(user)
     if qu.qu_cur(st) == None:
-        return ax_rsp(sp.sp_get(loc, "welcome"),
-                      sp.sp_get(loc, "reprompt"), False, None)
+        return ax_ask(loc, "welcome")
     return ax_start(req, user, st, st["idx"], st["off"], c,
                     loc, "REPLACE_ALL")
 
@@ -265,11 +282,9 @@ def ax_intent(req, user, rq, c, loc):
     if name == "AMAZON.CancelIntent":
         return ax_rsp(None, None, True, [ax_stop_dir()])
     if name == "AMAZON.HelpIntent":
-        return ax_rsp(sp.sp_get(loc, "help"),
-                      sp.sp_get(loc, "reprompt"), False, None)
+        return ax_ask(loc, "help")
     if name == "AMAZON.FallbackIntent":
-        return ax_rsp(sp.sp_get(loc, "huh"),
-                      sp.sp_get(loc, "reprompt"), False, None)
+        return ax_ask(loc, "huh")
     if name.startswith("AMAZON.Loop"):
         return ax_rsp(sp.sp_get(loc, "bye"), None, True, None)
     if name.startswith("AMAZON.Shuffle"):
@@ -277,8 +292,7 @@ def ax_intent(req, user, rq, c, loc):
     if name.startswith("AMAZON.Repeat"):
         return ax_do_step(req, user, c, loc, 0)
     log.log_add("wrn", "alexa", "unknown intent %r" % name[:48])
-    return ax_rsp(sp.sp_get(loc, "huh"),
-                  sp.sp_get(loc, "reprompt"), False, None)
+    return ax_ask(loc, "huh")
 
 
 def ax_evt_near(req, user, rq, c, loc):

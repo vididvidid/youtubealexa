@@ -150,10 +150,20 @@ PHASE 4  ALEXA SKILL
 
   Developer console Test tab, language Hindi:
 
-  [ ] type "मेरा गाना खोलो"
+  [ ] type "सुरीली पेटी खोलो"
       expected reply: नमस्ते, क्या सुनना है?
+  [ ] JSON Input and JSON Output panels are NOT empty
+      this is the one that matters. Empty panels mean the
+      skill was never called and you are reading Alexa's own
+      answer, however convincing it looks. Do not debug the
+      server in that case; fix the invocation name or enable
+      the skill for testing first.
+  [ ] JSON Output contains a Dialog.ElicitSlot directive
   [ ] type "लग जा गले"
       expected: JSON reply containing AudioPlayer.Play
+      if instead you get an Amazon Music answer, ElicitSlot
+      did not take. Fall back to the one shot form and tell
+      me, because that decides the whole two turn design.
   [ ] console Logs tab shows "play idx=0 ..."
 
   If you get a signature error, your clock may be off. The
@@ -168,7 +178,7 @@ PHASE 5  THE ECHO
 Now the real thing. This is where unknowns show up, because
 the Echo fetches the audio itself.
 
-  [ ] "अलेक्सा, मेरा गाना"            -> she asks what to play
+  [ ] "अलेक्सा, सुरीली पेटी"            -> she asks what to play
   [ ] "लग जा गले"                     -> audio actually starts
   [ ] time from speaking to first sound: ____ seconds
       under 8 is good, over 12 means the fetch is slow
@@ -179,9 +189,9 @@ the Echo fetches the audio itself.
 
   [ ] "अलेक्सा, अगला गाना"            -> skips
   [ ] "अलेक्सा, रोको"                 -> stops
-  [ ] "अलेक्सा, मेरा गाना" then "चालू करो" -> resumes
+  [ ] "अलेक्सा, सुरीली पेटी" then "चालू करो" -> resumes
 
-  [ ] one shot form: "अलेक्सा, मेरा गाना से लग जा गले बजाओ"
+  [ ] one shot form: "अलेक्सा, सुरीली पेटी से लग जा गले बजाओ"
 
   If audio never starts but the logs show "play idx=0", the
   Echo could not fetch the URL. Check: is the tunnel still up,

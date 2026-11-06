@@ -180,9 +180,15 @@ It is also on the docs website if that is easier to copy from
 a phone. Then Save Model, then Build Model, and wait for the
 build to finish.
 
-The invocation name is "मेरा गाना". If the build rejects it,
-try a different two word name; Amazon tends to reject single
-word invocation names.
+The invocation name is "सुरीली पेटी". Pick a replacement with
+care if you change it. Amazon rejects single word names, and a
+name that reads like an ordinary music request never reaches
+your skill at all: Alexa's own music domain answers first. The
+earlier name "मेरा गाना" means "my song", so "अलेक्सा, मेरा गाना
+खोलो" was parsed as "open my song" and got an Amazon Music
+Unlimited advert instead. The giveaway is the Test tab showing
+empty JSON Input and JSON Output panels, which means your
+endpoint was never called.
 
 
 B4. Endpoint
@@ -228,7 +234,7 @@ B6. Test in the console
 Developer console, Test tab. Switch it from Off to Development.
 Set the language selector to Hindi. Type:
 
-  मेरा गाना खोलो
+  सुरीली पेटी खोलो
 
 Expected reply: नमस्ते, क्या सुनना है?
 
@@ -244,13 +250,40 @@ check the phone console Logs tab for a line like
 
 If you see that, the hard part is done.
 
+Read the JSON Input and JSON Output panels on the right, not
+just the chat bubbles. A reply that looks sensible but leaves
+both panels empty did not come from this skill at all. Alexa
+answered it herself, and what you are reading is her own music
+domain. In that case the problem is the invocation name or the
+skill not being enabled for testing, never your server.
+
+
+B6a. Prove the endpoint separately
+----------------------------------
+
+If you want to test the server without depending on the
+invocation name at all, use the Manual JSON tab next to Alexa
+Simulator. It sends a request you paste straight to your
+endpoint, correctly signed, skipping speech recognition
+entirely. Pick LaunchRequest from its template list and send
+it.
+
+A reply with outputSpeech in it means the whole chain works:
+tunnel, certificate, signature check, and handler. Anything
+else is a real server problem, and the phone console Logs tab
+will say which:
+
+  signature: ...    the request did not verify
+  host not allowed  add the hostname to public_hosts
+  wrong skill       skill_id in config does not match
+
 
 B7. The real thing
 ------------------
 
 Say to the Echo:
 
-  "अलेक्सा, मेरा गाना"
+  "अलेक्सा, सुरीली पेटी"
   "क्या सुनना है?"
   "लग जा गले"
 

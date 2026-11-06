@@ -1,2 +1,2 @@
-VER_STR = "0.3.5"
+VER_STR = "0.4.0"
 VER_NAME = "ytalexa"

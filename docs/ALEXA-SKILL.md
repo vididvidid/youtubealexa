@@ -17,8 +17,8 @@ that a YouTube scraping skill will never get.
 
 What you can have, with the invocation name below:
 
-  one shot    "अलेक्सा, मेरा गाना से लग जा गले बजाओ"
-  two turn    "अलेक्सा, मेरा गाना"
+  one shot    "अलेक्सा, सुरीली पेटी से लग जा गले बजाओ"
+  two turn    "अलेक्सा, सुरीली पेटी"
               "क्या सुनना है?"
               "लग जा गले"
 
@@ -60,10 +60,16 @@ Open the JSON Editor and paste the file next to this one:
 
   docs/interaction-hi-IN.json
 
-Invocation name is "मेरा गाना". Two words is safer than one;
-Amazon tends to reject single word invocation names. If you
-want to try "गाना" alone, change it and rebuild, and if the
-build complains put it back.
+Invocation name is "सुरीली पेटी", which means "melodious box".
+It is deliberately not a word for "song" or "music". Amazon
+requires at least two words, and separately requires that a
+name not collide with Alexa's built in features. A name like
+"मेरा गाना" ("my song") satisfies the word count and still
+fails, because Alexa's music domain claims the utterance
+before the skill is considered. You get a music answer, and
+the Test tab shows no skill invocation. If you change the
+name, keep it something nobody would say to a speaker by
+accident.
 
 Save, then Build Model. Wait for it to finish.
 
@@ -100,7 +106,7 @@ is set the server accepts any correctly signed Alexa request.
 Use the Test tab in the developer console, set it to Hindi, and
 type:
 
-  मेरा गाना खोलो
+  सुरीली पेटी खोलो
 
 You should get "नमस्ते, क्या सुनना है?" back. Then:
 

@@ -108,8 +108,28 @@ need = ['AMAZON.PauseIntent','AMAZON.ResumeIntent',
 have = [i['name'] for i in lm['intents']]
 for n in need:
     assert n in have, 'missing ' + n
+inv = lm['invocationName']
+assert len(inv.split()) >= 2, 'invocation name needs two words'
+for w in [u'\u0917\u093e\u0928\u093e', u'\u0938\u0902\u0917\u0940\u0924',
+          'music', 'song', 'radio']:
+    assert w not in inv.lower(), 'invocation name collides: ' + w
+im = d['interactionModel']
+dlg = im['dialog']['intents']
+di = None
+for i in dlg:
+    if i['name'] == 'PlayIntent':
+        di = i
+assert di != None, 'no PlayIntent in dialog model'
+ds = di['slots'][0]
+assert ds['name'] == 'query'
+assert ds['elicitationRequired'] == True, 'slot not elicited'
+pid = ds['prompts']['elicitation']
+ids = [p['id'] for p in im['prompts']]
+assert pid in ids, 'elicitation prompt ' + pid + ' not defined'
+for p in im['prompts']:
+    assert len(p['variations']) > 0, 'empty prompt ' + p['id']
 " 2>/tmp/model.err; then
-  good "SearchQuery carrier phrases and playback intents"
+  good "carrier phrases, dialog model, invocation name"
 else
   bad "model problem"; cat /tmp/model.err
 fi
