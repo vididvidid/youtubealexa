@@ -16,6 +16,8 @@ MD_PAGES = [
      "Hostnames and tunnels"],
     ["docs/SETUP-VERCEL.md", "vercel.html", "Vercel",
      "Serverless front door"],
+    ["SECURITY.md", "security.html", "Security",
+     "Threat model"],
     ["VERSION", "version.html", "Changelog",
      "Features and fixes"]
 ]

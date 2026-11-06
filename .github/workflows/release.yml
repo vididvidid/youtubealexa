@@ -48,7 +48,8 @@ jobs:
           mkdir -p dist stage/ytalexa
           cp -R src bin docs api stage/ytalexa/
           cp VERSION README.md SETUP.md TEST.md \
-             requirements.txt vercel.json stage/ytalexa/
+             SECURITY.md requirements.txt vercel.json \
+             stage/ytalexa/
           sed "s|OWNER/REPO|$SLUG|g" install.sh \
              > stage/ytalexa/install.sh
           chmod +x stage/ytalexa/install.sh

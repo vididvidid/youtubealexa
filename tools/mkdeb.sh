@@ -15,7 +15,8 @@ mkdir -p "$APP" "$BUILD/$TPREFIX/bin" "$BUILD/DEBIAN"
 
 cp -R "$ROOT/src" "$ROOT/bin" "$ROOT/docs" "$APP/"
 cp "$ROOT/VERSION" "$ROOT/README.md" "$ROOT/SETUP.md" \
-   "$ROOT/TEST.md" "$ROOT/requirements.txt" "$APP/"
+   "$ROOT/TEST.md" "$ROOT/SECURITY.md" \
+   "$ROOT/requirements.txt" "$APP/"
 mkdir -p "$APP/cache"
 find "$APP" -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null || true
 chmod +x "$APP"/bin/*.sh "$APP"/bin/*.py
