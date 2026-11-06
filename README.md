@@ -28,11 +28,32 @@ including streamed output, and Cloudflare's CDN terms disallow
 proxying large media that is not hosted on Cloudflare.
 
 
+install
+-------
+
+In Termux, one line:
+
+  curl -fsSL https://raw.githubusercontent.com/OWNER/REPO/main/\
+install.sh | bash
+
+Then:
+
+  ytalexa setup
+
+That opens a numbered terminal menu. Work down it. Full steps
+are in SETUP.md, and the same docs are published as a website
+by the pages workflow, which is easier to read on a phone.
+
+
 layout
 ------
 
   VERSION            feature plan and per release change log
   README.md          this file
+  SETUP.md           one linear setup path, phone then amazon
+  TEST.md            manual checks that need real hardware
+  install.sh         curl installer for termux
+  bin/cli.py         the ytalexa command
   bin/serve.py       entry point for the phone
   src/cfg.py         json config, secrets, atomic save
   src/db.py          sqlite handle, kv table
@@ -41,17 +62,28 @@ layout
   src/routes_ui.py   console and json api
   src/web/           single page console
   src/ver.py         version string
-  docs/              setup guides
+  src/wizard.py      terminal setup wizard
+  docs/              setup guides and the alexa skill model
+  tools/             site generator, checks, tests, deb builder
+  api/               vercel entry point
   cache/             extracted audio, created at runtime
 
 
 run it
 ------
 
+  ytalexa setup      guided, recommended
+  ytalexa start      background
+  ytalexa serve      foreground
+  ytalexa status     what is and is not set up
+  ytalexa selftest   check the pipeline end to end
+
+Or without installing:
+
   python3 bin/serve.py
 
-Nothing to install for the console. F04 onward will add yt-dlp
-and ytmusicapi.
+Needs python3, openssl, yt-dlp and ytmusicapi. The console
+itself is stdlib only.
 
 The admin token is generated on first start and printed to the
 terminal every time the server starts. Open the console at

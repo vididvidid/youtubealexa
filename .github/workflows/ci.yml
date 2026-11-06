@@ -1,0 +1,110 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: show tool versions
+        run: |
+          python3 --version
+          openssl version
+          node --version || true
+
+      - name: run checks
+        run: bash tools/check.sh
+
+  deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: install runtime deps
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r requirements.txt
+
+      - name: module import audit
+        run: |
+          python3 - <<'PY'
+          import os
+          import sys
+          sys.path.insert(0, "src")
+          mods = sorted(n[:-3] for n in os.listdir("src")
+                        if n.endswith(".py"))
+          import log
+          log.LOG_ECHO = 0
+          for m in mods:
+              __import__(m)
+          import yt_dlp
+          import ytmusicapi
+          import requests
+          import urllib3
+          print("%d modules import clean beside the deps"
+                % len(mods))
+          PY
+
+      - name: route table loads
+        run: |
+          python3 - <<'PY'
+          import os
+          import sys
+          sys.path.insert(0, "src")
+          os.environ["YTA_HOME"] = "/tmp/ytaci"
+          import log
+          log.LOG_ECHO = 0
+          import alexa
+          import audio
+          import http_core
+          import routes_ui
+          audio.au_init("/tmp/ytaci")
+          routes_ui.ui_init(os.getcwd())
+          routes_ui.ui_routes()
+          alexa.ax_routes()
+          n = len(http_core.RT_TAB)
+          assert n >= 20, "only %d routes" % n
+          print("%d routes registered" % n)
+          PY
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: build termux deb
+        run: bash tools/mkdeb.sh dist
+
+      - name: build docs site
+        run: python3 tools/mkdocs.py site
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ytalexa-deb
+          path: dist/ytalexa.deb
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ytalexa-site
+          path: site

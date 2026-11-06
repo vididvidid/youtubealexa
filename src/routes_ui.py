@@ -15,7 +15,8 @@ WEB_DIR = ""
 DOC_DIR = ""
 BOOT_TS = 0
 
-DOC_EXTRA = ["VERSION", "README.md"]
+DOC_EXTRA = ["SETUP.md", "TEST.md", "README.md",
+             "VERSION"]
 DOC_EXT_OK = [".md", ""]
 
 

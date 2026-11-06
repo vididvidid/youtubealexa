@@ -26,6 +26,10 @@ FEATURE PLAN
   F10  vercel adapter and deploy files             DONE     0.2.0
   F11  setup docs: mobile, vercel, domain, skill   DONE     0.2.0
   F12  termux survival: wakelock, boot, tailscale  DONE     0.2.0
+  F13  terminal setup wizard and ytalexa cli         DONE     0.3.0
+  F14  docs website for github pages                 DONE     0.3.0
+  F15  ci, pages and release pipelines               DONE     0.3.0
+  F16  packaging: curl installer, termux deb         DONE     0.3.0
 
   all features landed. nothing is proven on real hardware yet,
   see TEST.md.
@@ -283,3 +287,127 @@ FEATURE PLAN
     * ranking is heuristic. The weights are one table at the top
       of yt_search.py and want tuning against real phrases.
     * nothing here has run on a real Echo or a real phone yet.
+
+
+0.3.0 - 2026-11-07
+------------------
+
+  F13 setup wizard and cli
+
+    + src/wizard.py   numbered terminal menu, each row carries
+                      a live [ ok ] / [ no ] / [ ?? ] state
+                      worked out by probing the real system
+    + src/wizard.py   steps: deps, battery, cookies, tunnel,
+                      skill id, boot autostart, start, selftest,
+                      status
+    + src/wizard.py   colour auto-disables when not a tty and
+                      when NO_COLOR is set
+    + src/wizard.py   each step prints the command it runs, so
+                      nothing is hidden
+    + bin/cli.py      the ytalexa command: setup start stop
+                      restart serve status selftest token
+                      console cookies tunnel update logs version
+    + bin/cli.py      bare "ytalexa" opens the wizard
+    + selftest probes health, token refusal, token acceptance,
+      a real search and a real download, then reports cookie,
+      skill id and tunnel state with advice for each gap
+
+  F14 docs website
+
+    + tools/mkdocs.py  markdown to static html, no dependencies
+    + tools/mkdocs.py  column 0 text becomes flowing paragraphs
+                       that reflow on a phone, indented text
+                       stays preformatted. that split is what
+                       makes these docs readable on mobile
+                       without losing the ascii tables
+    + tools/mkdocs.py  setext and atx headings, anchors, per
+                       page table of contents over 3 sections
+    + tools/mkdocs.py  urls auto linked, TEST.md checkboxes
+                       rendered as real checkbox glyphs
+    + tools/site.css   sidebar on desktop, burger menu under
+                       800px, dark and light, no CDN at all
+    + the skill model is published as its own page and as a
+      downloadable json, so it can be copied on a phone
+
+  F15 pipelines
+
+    + .github/workflows/ci.yml       checks on 3.9 and 3.12,
+                                     import audit with the real
+                                     deps installed, route table
+                                     load, deb and site built as
+                                     artifacts
+    + .github/workflows/pages.yml    builds the site, rewrites
+                                     OWNER/REPO to the real slug
+                                     so the install command on
+                                     the site is copy pasteable,
+                                     publishes install.sh beside
+                                     it, deploys to Pages
+    + .github/workflows/release.yml  runs checks, refuses to
+                                     release when the tag and
+                                     src/ver.py disagree, builds
+                                     tarball plus deb plus
+                                     install.sh, unpacks the
+                                     tarball and runs it before
+                                     publishing
+    + tools/check.sh      compile, 80 column rule, no comment
+                          rule, shell parse, json parse, alexa
+                          model shape, stdlib shadow audit, web
+                          console id audit, site build with tag
+                          balance check, offline tests
+    + tools/selftest.py   79 offline assertions over fold,
+                          scoring, view parsing, url signing,
+                          range parsing, queue, cookies,
+                          signature guards, config and locales.
+                          no network needed.
+
+  F16 packaging
+
+    + install.sh        one curl line. detects Termux, installs
+                        packages, pip installs the two deps,
+                        pulls the latest release or falls back
+                        to the branch tarball, keeps any old
+                        copy as .old, writes a ytalexa launcher
+                        and warns if the bin dir is off PATH
+    + tools/mkdeb.sh    real Termux deb, paths under
+                        data/data/com.termux/files/usr, depends
+                        on python openssl-tool ffmpeg, postinst
+                        pip installs the deps, prerm stops the
+                        server. builds to 50 KiB.
+    + SETUP.md          one linear path, part A phone and part B
+                        amazon, with the day-it-breaks table
+
+  fixed while building
+
+    * tools/mkdocs.py had one line over 80 because of a literal
+      install URL. wrapped it in the generated pre block.
+    * tools/check.sh counted js comments with grep -c, which
+      exits 1 when the count is zero, so the "|| echo 0"
+      fallback printed a second zero and the comparison failed.
+      The check script was failing on clean code.
+    * release.yml used a backslash continuation inside a shell
+      string to stay under 80 columns. The continuation line sat
+      at column 0 and broke out of the YAML block scalar, so the
+      whole workflow stopped parsing. Replaced with a shell
+      variable for the download prefix.
+
+  checked by hand
+
+    * check.sh passes every group on this machine
+    * 79 of 79 offline assertions pass
+    * site builds 10 pages, every tag balanced, 72 checkboxes
+      rendered in the test sheet page
+    * deb builds and dpkg-deb reads it back, 51 entries, Termux
+      prefix correct
+    * wizard menu renders with colour off when piped, and the
+      dependency step correctly reported yt-dlp missing from
+      system python
+    * cli version, help, status, cookies and unknown command
+      all behave
+    * all three workflows parse as yaml with no tabs
+
+  not done, on purpose
+
+    * a single file .pyz executable. It would need the web
+      console and docs extracted out of the archive at runtime,
+      which is real complexity for no gain over the deb and the
+      curl installer. Say the word if you still want it.

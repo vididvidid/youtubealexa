@@ -1,0 +1,113 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: tag name to build
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: run checks before releasing
+        run: bash tools/check.sh
+
+      - name: version must match the tag
+        env:
+          REF: ${{ github.ref_name }}
+          MANUAL: ${{ inputs.tag }}
+        run: |
+          TAG="${MANUAL:-$REF}"
+          VER=$(sed -n 's/^VER_STR = "\(.*\)"/\1/p' src/ver.py)
+          echo "tag $TAG, src/ver.py $VER"
+          if [ "$TAG" != "v$VER" ]; then
+            echo "tag $TAG does not match version $VER" >&2
+            echo "bump VER_STR in src/ver.py first" >&2
+            exit 1
+          fi
+
+      - name: build tarball
+        env:
+          SLUG: ${{ github.repository }}
+        run: |
+          mkdir -p dist stage/ytalexa
+          cp -R src bin docs api stage/ytalexa/
+          cp VERSION README.md SETUP.md TEST.md \
+             requirements.txt vercel.json stage/ytalexa/
+          sed "s|OWNER/REPO|$SLUG|g" install.sh \
+             > stage/ytalexa/install.sh
+          chmod +x stage/ytalexa/install.sh
+          mkdir -p stage/ytalexa/cache
+          find stage -name '__pycache__' -type d \
+             -exec rm -rf {} + 2>/dev/null || true
+          tar -czf dist/ytalexa.tar.gz -C stage ytalexa
+          cp stage/ytalexa/install.sh dist/install.sh
+          ls -la dist
+
+      - name: build termux deb
+        env:
+          SLUG: ${{ github.repository }}
+        run: |
+          sed -i "s|OWNER/REPO|$SLUG|g" tools/mkdeb.sh
+          bash tools/mkdeb.sh dist
+
+      - name: verify the tarball installs and runs
+        run: |
+          mkdir -p /tmp/t && tar -xzf dist/ytalexa.tar.gz -C /tmp/t
+          python3 /tmp/t/ytalexa/bin/cli.py version
+          python3 /tmp/t/ytalexa/bin/cli.py help > /dev/null
+          echo "tarball runs"
+
+      - name: notes
+        env:
+          SLUG: ${{ github.repository }}
+        run: |
+          DL="https://github.com/$SLUG/releases/latest/download"
+          {
+            echo "## Install"
+            echo
+            echo '```'
+            echo "curl -fsSL $DL/install.sh | bash"
+            echo '```'
+            echo
+            echo "Or the Termux package:"
+            echo
+            echo '```'
+            echo "pkg install -y python openssl-tool ffmpeg"
+            echo "curl -fsSLO $DL/ytalexa.deb"
+            echo "dpkg -i ytalexa.deb"
+            echo "ytalexa setup"
+            echo '```'
+            echo
+            echo "Then work down the wizard menu."
+            echo "Full steps are in SETUP.md."
+            echo
+            echo "## Changes"
+            echo
+            sed -n '/^0\./,/^$/p' VERSION | head -40
+          } > notes.md
+          cat notes.md
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          body_path: notes.md
+          files: |
+            dist/ytalexa.tar.gz
+            dist/ytalexa.deb
+            dist/install.sh

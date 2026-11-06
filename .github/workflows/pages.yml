@@ -1,0 +1,65 @@
+name: pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "*.md"
+      - "docs/**"
+      - "tools/mkdocs.py"
+      - "tools/site.css"
+      - "install.sh"
+      - "src/ver.py"
+      - "VERSION"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: build site
+        run: python3 tools/mkdocs.py site
+
+      - name: fill in the real repo name
+        env:
+          SLUG: ${{ github.repository }}
+        run: |
+          for f in site/*.html; do
+            sed -i "s|OWNER/REPO|$SLUG|g" "$f"
+          done
+          sed "s|OWNER/REPO|$SLUG|g" install.sh > site/install.sh
+          chmod +x site/install.sh
+          echo "substituted $SLUG"
+          grep -o "https://[^ \"<]*install.sh" site/index.html \
+            | head -1
+
+      - name: copy the skill model for direct download
+        run: cp docs/interaction-hi-IN.json site/
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

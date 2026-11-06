@@ -6,3 +6,6 @@ config.json
 state.db
 state.db-wal
 state.db-shm
+site/
+dist/
+stage/
