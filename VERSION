@@ -1,0 +1,285 @@
+YTALEXA - VERSION AND FEATURE LOG
+=================================
+
+Hindi voice search for YouTube audio on Amazon Echo, served from an
+always-on Android phone over Termux. No YouTube Data API. Uses the
+owner's YouTube Premium cookies for PO-token exemption.
+
+Build rule: one feature per step. Nothing is marked DONE until it
+runs and has been checked by hand.
+
+
+FEATURE PLAN
+------------
+
+  ID   FEATURE                                     STATUS   VER
+  ---- ------------------------------------------- -------- ------
+  F01  config file, sqlite store, logging          DONE     0.1.0
+  F02  http core, route table, range, admin auth   DONE     0.1.0
+  F03  single page web ui, logs, config, docs      DONE     0.1.0
+  F04  youtube innertube search (lyric fragments)  DONE     0.2.0
+  F05  cookie store, load script, admin refresh    DONE     0.2.0
+  F06  audio extract, disk cache, signed urls      DONE     0.2.0
+  F07  alexa endpoint, signature verify, hi-IN     DONE     0.2.0
+  F08  radio queue, enqueue, next/pause/resume     DONE     0.2.0
+  F09  prefetch next track, cache eviction         DONE     0.2.0
+  F10  vercel adapter and deploy files             DONE     0.2.0
+  F11  setup docs: mobile, vercel, domain, skill   DONE     0.2.0
+  F12  termux survival: wakelock, boot, tailscale  DONE     0.2.0
+
+  all features landed. nothing is proven on real hardware yet,
+  see TEST.md.
+
+
+0.1.0 - 2026-11-07
+------------------
+
+  F01 config, store, logging
+
+    + src/cfg.py     json config in $YTA_HOME or ~/.ytalexa
+    + src/cfg.py     defaults table, unknown keys dropped on save
+    + src/cfg.py     atomic save via rename, mode 0600
+    + src/cfg.py     auto generated hmac_secret and admin_token
+    + src/db.py      sqlite handle, WAL, one lock, schema bootstrap
+    + src/db.py      kv table for later queue and cookie state
+    + src/log.py     levels dbg/inf/wrn/err to sqlite and stderr
+    + src/log.py     tail, level filter, trim to log_keep, clear
+
+  F02 http core
+
+    + src/http_core.py  stdlib ThreadingHTTPServer, no framework
+    + src/http_core.py  flat route table, exact and prefix match
+    + src/http_core.py  body cap 1 MiB, 413 over cap
+    + src/http_core.py  rsp_json/text/html/bytes/file/redir/pump
+    + src/http_core.py  file replies honour Range, send 206
+    + src/http_core.py  pump replies for later audio streaming
+    + src/http_core.py  admin token check, header or query param
+
+  F03 web ui
+
+    + src/routes_ui.py  /ui single page, static asset serving
+    + src/routes_ui.py  /api/status uptime, version, host, counts
+    + src/routes_ui.py  /api/logs tail with level filter, clear
+    + src/routes_ui.py  /api/config read and patch
+    + src/routes_ui.py  /api/docs list and read docs/*.md
+    + src/routes_ui.py  /health open, no token, for tunnel checks
+    + src/web/*         tabs: status, logs, config, docs
+    + src/web/*         no CDN, works with phone offline
+    + src/web/*         dark and light, 400px wide up
+    + src/web/*         config form exposes public_hosts so a
+                        custom domain can be added later
+    + bin/serve.py      entry point, prints url and admin token
+
+  fixed while building
+
+    * http_core emit() keyed the body write off the request
+      method, so every POST reply sent Content-Length and then
+      no body. Clients hung until timeout. The flag is now a
+      separate send argument, which also makes HEAD correct.
+
+  checked by hand
+
+    * health open, every /api route 401 without the token
+    * wrong token 401, token comparison is constant time
+    * /ui traversal to /etc/passwd blocked, 404
+    * /api/doc restricted to the generated file list, 404 on
+      ../../etc/passwd
+    * Range 10-19 returns 206 with 10 bytes, past-end gives 416
+    * body over 1 MiB gives 413
+    * config patch rejects unknown keys, wrong types and both
+      secret keys, and never echoes a secret back
+    * HTTP/1.1 keep-alive holds across three pipelined requests
+    * config survives restart, written 0600
+
+  notes
+
+    * admin token is generated on first run and printed once per
+      start. UI will not load without it.
+    * server binds 127.0.0.1 only. tunnel must mount /alexa and
+      /audio and must NOT mount /ui or /api.
+    * cfg keys for F04..F09 already exist in the defaults table so
+      the UI can show them before those features land.
+
+
+0.2.0 - 2026-11-07
+------------------
+
+  F04 youtube search
+
+    + src/yt_search.py  innertube POST on the WEB client, no
+                        api key of our own, no quota
+    + src/yt_search.py  html ytInitialData scrape as fallback
+    + src/yt_search.py  iterative videoRenderer walk, survives
+                        layout changes better than fixed paths
+    + src/yt_search.py  live streams and shorts filtered out
+    + src/yt_search.py  view counts parsed in english and hindi
+                        (लाख, करोड़, K, M, B)
+    + src/yt_search.py  scoring table: duration window, official
+                        channel, "- Topic" auto channels, junk
+                        title penalties, cover penalties, view
+                        count, youtube's own rank
+    + src/fold.py       devanagari to latin consonant skeleton
+                        so a Devanagari query matches a
+                        romanized title and the other way round
+    + src/fold.py       digraph folding (ph->f, jh->j, aa->a)
+                        absorbs spelling variation such as
+                        maaf / maaph / maf
+    + search is anonymous on purpose, cookies are not sent, so
+      the Premium account is not exposed to search traffic
+
+  F05 cookies
+
+    + src/ck.py         netscape cookie parser, #HttpOnly_ rows
+    + src/ck.py         checks for SID HSID SSID APISID SAPISID
+                        and reports what is missing
+    + src/ck.py         soonest expiry in days, for the console
+    + src/ck.py         atomic write at mode 0600
+    + bin/cookies_load.py  one shot loader, warns when the
+                        export was not actually logged in
+
+  F06 audio
+
+    + src/audio.py      yt-dlp subprocess, argv list never a
+                        shell string, video id regex checked
+                        first so an id can never inject
+    + src/audio.py      format 140 preferred, AAC in m4a, the
+                        one good audio format Alexa can play
+    + src/audio.py      hmac sha256 signed urls with expiry
+    + src/audio.py      per video lock, two requests for one
+                        song download it once
+    + src/audio.py      lru eviction by mtime with a 16 MiB floor
+    + optional transcode path behind cfg transcode=1 for the
+      rare video with no m4a audio, needs ffmpeg
+
+  F07 alexa endpoint
+
+    + src/alexa_sig.py  real signature verification through the
+                        openssl binary, so no python crypto
+                        dependency to build on termux
+    + src/alexa_sig.py  cert url shape, chain to the system CA
+                        store, echo-api.amazon.com SAN, expiry,
+                        rsa-sha1 over the RAW body, 150s window
+    + src/alexa.py      skill id check, Host allowlist
+    + src/alexa.py      launch, intents, audio events, playback
+                        controller, session ended, exceptions
+    + src/speak.py      hi-IN and en-IN strings, locale falls
+                        back by language prefix then to en-IN
+    + audio urls are built from the request Host header, so the
+      tunnel hostname just works and a custom domain only needs
+      public_hosts set
+
+  F08 queue
+
+    + src/yt_radio.py   ytmusicapi get_watch_playlist radio, the
+                        seed song then real youtube music radio
+    + src/yt_radio.py   merge keeps the chosen song first, then
+                        radio, then the rest of the search hits
+    + src/qu.py         per user queue in sqlite kv, 3 day ttl
+    + src/qu.py         "<idx>:<vid>" stream tokens, well under
+                        the 1024 char limit
+    + ENQUEUE replies carry expectedPreviousToken as Amazon
+      requires, which is what stops a race between a spoken
+      "next" and a track change
+    + a song that fails extraction is skipped, up to 3 tries,
+      instead of ending playback
+
+  F09 prefetch and eviction
+
+    + src/alexa.py      next track pulled on a daemon thread on
+                        PlaybackStarted and on each enqueue, so
+                        the gap between songs is usually zero
+    + eviction runs on the same thread, after the prefetch
+
+  F10 vercel
+
+    + api/index.py      reuses the same handler and route table,
+                        no second server implementation
+    + vercel.json       all paths rewritten to the one function
+    + src/cfg.py        every config key settable as YTA_<KEY>,
+                        and with YTA_ADMIN_TOKEN set no config
+                        file is written, which is what a read
+                        only serverless filesystem needs
+    + src/alexa.py      audio_mode=proxy makes /audio a 302 to
+                        audio_origin, so vercel can front the
+                        skill while the phone serves the bytes
+
+  F11 docs
+
+    + docs/SETUP-MOBILE.md   the main path, with the cookie
+                             export trap spelled out
+    + docs/SETUP-VERCEL.md   what works and what cannot
+    + docs/SETUP-DOMAIN.md   the cloudflare CDN terms problem
+                             with sdpmss.com, and two ways to
+                             avoid dragging the business domain
+                             into this
+    + docs/ALEXA-SKILL.md    console walkthrough
+    + docs/interaction-hi-IN.json  hi-IN model, SearchQuery slot
+                             with carrier phrases, all the
+                             playback intents Audio Player needs
+
+  F12 termux
+
+    + bin/termux_setup.sh  packages, versions, state dir
+    + bin/run.sh           wake lock, pid file, restart loop
+    + bin/boot.sh          for ~/.termux/boot
+    + bin/tunnel.sh        tailscale funnel mounting ONLY
+                           /alexa and /audio, or cloudflared
+
+  console
+
+    + Media tab: cookie status and paste box, cache listing with
+      evict and clear, and a search tester that runs the real
+      ranking and can pre-cache a result
+    + Status tab now shows cookie state and cache file count
+
+  fixed while building
+
+    * src/queue.py shadowed the stdlib queue module, which broke
+      urllib3 inside ytmusicapi with "module 'queue' has no
+      attribute 'LifoQueue'". Renamed to qu.py, and cookies.py
+      to ck.py for the same reason. There is now an import audit
+      that loads every module next to yt_dlp and ytmusicapi.
+    * yt-dlp exited 1 while still producing a correct file: the
+      -o template ended in .part and collided with yt-dlp's own
+      partial file handling. Now downloads to tmp-<vid>.m4a and
+      renames, with temp files swept on every path.
+    * the first scorer had no relevance term at all and ranked
+      on view count, so "mujhe maaph karna" picked a 196M view
+      song that was not the one asked for. Added the fold based
+      title coverage term, cut the view weight, and made
+      youtube's own rank count for much more.
+    * covers outranked originals, and the radio queue then
+      followed the cover, so the whole session drifted. Cover,
+      acoustic and unplugged are now penalised.
+
+  checked by hand
+
+    * hindi search in both scripts, correct song on top for
+      लग जा गले, तेरे बिना जिया जाए ना, ओम जय जगदीश हरे,
+      कभी कभी मेरे दिल में, मुझे माफ करना
+    * fold: Devanagari query vs romanized title scores 1.00,
+      wrong song 0.00
+    * download gives AAC 128k m4a, 4.1 MiB for 4:11, in 5.6s
+    * cache hit returns in 0.00s, no temp files left behind
+    * signed url: valid passes, tampered 403, expired 403,
+      wrong key 403
+    * signature: forged CA rejected, tampered body rejected,
+      cert url traversal rejected, missing SAN rejected, stale
+      timestamp rejected
+    * simulated conversation end to end: launch, play from a
+      Devanagari fragment, Echo fetch 200 with audio/mp4, range
+      206, PlaybackStarted, NearlyFinished returning ENQUEUE
+      with the right expectedPreviousToken, next, pause
+    * skill id mismatch 403, wrong Host 403, right Host 200
+    * radio gave 50 era matched tracks from a Lata seed
+    * env overrides cast ints and lists, and suppress the
+      config file write when YTA_ADMIN_TOKEN is set
+
+  known weak spots
+
+    * romanized queries rank worse than Devanagari ones. Alexa
+      hi-IN transcribes to Devanagari so the common case is the
+      good one, but it is a real gap.
+    * ranking is heuristic. The weights are one table at the top
+      of yt_search.py and want tuning against real phrases.
+    * nothing here has run on a real Echo or a real phone yet.

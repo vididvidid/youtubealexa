@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ytalexa console</title>
+<link rel="stylesheet" href="/ui/style.css">
+</head>
+<body>
+
+<div id="gate" class="gate">
+  <div class="card gatebox">
+    <h1>ytalexa</h1>
+    <p class="dim">Paste the admin token printed by the server
+    on start.</p>
+    <input id="tok" type="password" placeholder="admin token"
+           autocomplete="off" spellcheck="false">
+    <button id="tokgo">Unlock</button>
+    <p id="gateerr" class="err"></p>
+  </div>
+</div>
+
+<div id="app" class="app hide">
+
+  <header>
+    <div class="brand">
+      <span id="dot" class="dot"></span>
+      <strong>ytalexa</strong>
+      <span id="vers" class="dim mono"></span>
+    </div>
+    <nav>
+      <button class="tab on" data-t="status">Status</button>
+      <button class="tab" data-t="logs">Logs</button>
+      <button class="tab" data-t="media">Media</button>
+      <button class="tab" data-t="config">Config</button>
+      <button class="tab" data-t="docs">Docs</button>
+    </nav>
+    <button id="lock" class="ghost">Lock</button>
+  </header>
+
+  <main>
+
+    <section id="p-status" class="pane">
+      <div id="cards" class="grid"></div>
+      <div class="card">
+        <h2>Feature rollout</h2>
+        <div id="feats" class="feats"></div>
+      </div>
+    </section>
+
+    <section id="p-logs" class="pane hide">
+      <div class="card">
+        <div class="bar">
+          <label>Level
+            <select id="lvl">
+              <option value="dbg">all</option>
+              <option value="inf" selected>info and up</option>
+              <option value="wrn">warn and up</option>
+              <option value="err">errors only</option>
+            </select>
+          </label>
+          <label>Lines
+            <select id="nlines">
+              <option>50</option>
+              <option selected>200</option>
+              <option>500</option>
+              <option>1000</option>
+            </select>
+          </label>
+          <label class="chk">
+            <input id="auto" type="checkbox" checked> auto
+          </label>
+          <span class="spacer"></span>
+          <button id="refresh" class="ghost">Refresh</button>
+          <button id="wipe" class="danger">Clear</button>
+        </div>
+        <div id="logwrap" class="logwrap">
+          <table class="logs">
+            <thead>
+              <tr><th>time</th><th>lvl</th><th>tag</th>
+              <th>message</th></tr>
+            </thead>
+            <tbody id="logbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="p-media" class="pane hide">
+
+      <div class="card">
+        <h2>Premium cookies</h2>
+        <div id="ckcards" class="grid"></div>
+        <p class="dim">Export from a <b>private window</b> on a
+        desktop browser, then close that window without logging
+        out. Exporting from a session you keep using lets YouTube
+        rotate it and silently break playback.</p>
+        <textarea id="cktext" placeholder="paste cookies.txt
+contents here"></textarea>
+        <div class="bar">
+          <button id="cksave">Load cookies</button>
+          <button id="ckdrop" class="danger">Remove</button>
+          <span id="ckmsg" class="dim"></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Audio cache</h2>
+        <div class="bar">
+          <span id="cacheinfo" class="dim"></span>
+          <span class="spacer"></span>
+          <button id="evict" class="ghost">Evict to limit</button>
+          <button id="wipecache" class="danger">Clear all</button>
+        </div>
+        <div class="logwrap">
+          <table class="logs">
+            <thead><tr><th>video</th><th>size</th>
+            <th>last used</th></tr></thead>
+            <tbody id="cachebody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Search tester</h2>
+        <p class="dim">Type what your mother would say. This runs
+        the same search and ranking the skill uses, without
+        playing anything.</p>
+        <div class="bar">
+          <input id="sq" type="text" placeholder="लग जा गले">
+          <button id="sgo">Search</button>
+        </div>
+        <div class="logwrap">
+          <table class="logs">
+            <thead><tr><th>score</th><th>rel</th><th>len</th>
+            <th>title</th><th></th></tr></thead>
+            <tbody id="sbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <section id="p-config" class="pane hide">
+      <div class="card">
+        <h2>Settings</h2>
+        <p class="dim">Secrets are never sent to this page. Edit
+        them in the config file on the device.</p>
+        <div id="form" class="form"></div>
+        <div class="bar">
+          <button id="save">Save</button>
+          <button id="reload" class="ghost">Reload</button>
+          <span id="cfgmsg" class="dim"></span>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Custom domain</h2>
+        <p class="dim">Add every hostname that should be allowed
+        to reach this server, one per line, in
+        <code>public_hosts</code> above. Example:
+        <code>music.sdpmss.com</code>. The tunnel must mount only
+        <code>/alexa</code> and <code>/audio</code>, never
+        <code>/ui</code> or <code>/api</code>.</p>
+        <div id="hostlist" class="hostlist"></div>
+      </div>
+    </section>
+
+    <section id="p-docs" class="pane hide">
+      <div class="docwrap">
+        <div class="card doclist">
+          <h2>Files</h2>
+          <ul id="docnames"></ul>
+        </div>
+        <div class="card docbody">
+          <h2 id="docttl">select a file</h2>
+          <pre id="doctext" class="mono"></pre>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="/ui/app.js"></script>
+</body>
+</html>
