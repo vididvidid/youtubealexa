@@ -649,3 +649,60 @@ FEATURE PLAN
       wizard shows all five dependencies green
     * the placeholder guard catches a planted OWNER slash REPO
       and passes on a clean tree
+
+
+0.3.5 - 2026-11-07
+------------------
+
+  install step 3 of 6 died with "archive layout not recognised"
+  on a real phone. my fault again, and worse, my own test had
+  given a false pass.
+
+  the bug
+
+    * the release tarball unpacks to ytalexa/bin/cli.py, which
+      is three levels below the extract root. The layout probe
+      used find -maxdepth 2, so it matched nothing.
+    * with find returning nothing, SRC became dirname "" which
+      is ".", and the guard then tested ./bin/cli.py, a path
+      relative to the current directory.
+    * I had run my sandbox test from inside the repo, where
+      ./bin/cli.py exists. So it passed by accident, reading my
+      checkout instead of the download. On a phone the working
+      directory is the home directory, there is no bin/cli.py,
+      and it failed exactly as reported.
+    * find -printf is a GNU extension as well, so that line was
+      never safe on a busybox find either.
+
+  fixed
+
+    * the probe is plain POSIX shell now. It checks the extract
+      root, then each immediate subdirectory, for bin/cli.py.
+      No find, no -printf, no dependence on the current
+      directory.
+    * handles all three shapes: the release tarball's ytalexa/
+      wrapper, the branch tarball's youtubealexa-main/ wrapper,
+      and a flat archive.
+    * on failure it lists what the archive actually contained
+      and says the likely cause, instead of one opaque line.
+    * it now prints which directory it unpacked from, so this
+      class of problem is visible in the output next time.
+
+  so it cannot happen again
+
+    * ci.yml has an installer job that runs install.sh for real
+      from /tmp, a directory with no bin/cli.py, into a
+      sandboxed HOME, then runs the installed command and
+      asserts the launcher points into the install tree rather
+      than a checkout. That is the test I should have written
+      first.
+
+  checked by hand
+
+    * detection resolves release style, branch style and flat
+      archives
+    * a junk archive is refused and lists its contents
+    * the full installer runs from /tmp and reports 0.3.4, with
+      "from ytalexa" in the output
+    * python 3.14 on the reporting device passed the 3.11 gate
+      correctly, that part was fine

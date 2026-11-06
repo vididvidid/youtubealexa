@@ -88,6 +88,38 @@ jobs:
           print("%d routes registered" % n)
           PY
 
+  installer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: install from a neutral working directory
+        run: |
+          mkdir -p /tmp/fakehome
+          cd /tmp
+          env HOME=/tmp/fakehome \
+              YTA_DEST=/tmp/fakehome/ytalexa \
+              bash "$GITHUB_WORKSPACE/install.sh"
+
+      - name: the installed command runs
+        run: |
+          export HOME=/tmp/fakehome
+          /tmp/fakehome/.local/bin/ytalexa version
+          /tmp/fakehome/.local/bin/ytalexa status
+          test -f /tmp/fakehome/ytalexa/bin/cli.py
+          test -f /tmp/fakehome/ytalexa/src/wizard.py
+          test -f /tmp/fakehome/ytalexa/SETUP.md
+          test -d /tmp/fakehome/.ytalexa
+
+      - name: it did not pick up the checkout by mistake
+        run: |
+          grep -q "/tmp/fakehome/ytalexa" \
+            /tmp/fakehome/.local/bin/ytalexa
+
   package:
     runs-on: ubuntu-latest
     steps:

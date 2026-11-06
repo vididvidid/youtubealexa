@@ -80,13 +80,26 @@ fi
 mkdir -p "$TMP/x"
 tar -xzf "$TMP/a.tgz" -C "$TMP/x" || die "extract failed"
 
-SRC="$TMP/x"
-if [ ! -f "$SRC/bin/cli.py" ]; then
-  SRC="$(find "$TMP/x" -maxdepth 2 -name cli.py -path '*/bin/*' \
-        -printf '%h\n' 2>/dev/null | head -1)"
-  SRC="$(dirname "$SRC")"
+SRC=""
+if [ -f "$TMP/x/bin/cli.py" ]; then
+  SRC="$TMP/x"
+else
+  for d in "$TMP"/x/*/; do
+    [ -d "$d" ] || continue
+    if [ -f "${d}bin/cli.py" ]; then
+      SRC="${d%/}"
+      break
+    fi
+  done
 fi
-[ -f "$SRC/bin/cli.py" ] || die "archive layout not recognised"
+if [ -z "$SRC" ]; then
+  say "      archive contained:"
+  ls -1 "$TMP/x" 2>/dev/null | head -5 | sed 's/^/        /'
+  die "no bin/cli.py in the archive.
+    this usually means the download was an error page.
+    try again, or report it with the lines above."
+fi
+say "      from $(basename "$SRC")"
 
 if [ -d "$DEST" ]; then
   say "      keeping your old copy at $DEST.old"
