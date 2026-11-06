@@ -1,5 +1,6 @@
 import json
 import re
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -7,8 +8,9 @@ import urllib.request
 import fold as fd
 import log
 
-YS_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"
-YS_CVER = "2.20261001.00.00"
+YS_HOME = "https://www.youtube.com/"
+YS_CVER_DFLT = "2.20261030.02.00"
+YS_CONF_TTL = 21600
 YS_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
          "AppleWebKit/537.36 (KHTML, like Gecko) "
          "Chrome/131.0.0.0 Safari/537.36")
@@ -21,6 +23,11 @@ YS_MIN_DUR = 20
 YS_MAX_DUR = 3600
 
 YS_INIT_RE = re.compile(r"ytInitialData\s*=\s*(\{.*?\});")
+YS_KEY_RE = re.compile(r'"INNERTUBE_API_KEY":"([\w-]{30,60})"')
+YS_VER_RE = re.compile(r'"INNERTUBE_CLIENT_VERSION":'
+                       r'"([\d.]{6,24})"')
+
+YS_CONF = {"key": "", "cver": "", "at": 0}
 
 
 def ys_http(url, body, hdrs):
@@ -49,19 +56,46 @@ def ys_hdrs(lang, region):
     return h
 
 
-def ys_ctx(lang, region):
+def ys_ctx(lang, region, cver):
     cl = {}
     cl["clientName"] = "WEB"
-    cl["clientVersion"] = YS_CVER
+    cl["clientVersion"] = cver
     cl["hl"] = lang
     cl["gl"] = region
     return {"client": cl}
 
 
+def ys_conf(lang, region):
+    now = int(time.time())
+    if YS_CONF["key"] != "":
+        if now - YS_CONF["at"] < YS_CONF_TTL:
+            return YS_CONF, None
+    raw, err = ys_http(YS_HOME, None, ys_hdrs(lang, region))
+    if err != None:
+        return YS_CONF, err
+    txt = raw.decode("utf-8", "replace")
+    mk = YS_KEY_RE.search(txt)
+    if mk == None:
+        return YS_CONF, "no innertube key in home page"
+    mv = YS_VER_RE.search(txt)
+    cver = YS_CVER_DFLT
+    if mv != None:
+        cver = mv.group(1)
+    YS_CONF["key"] = mk.group(1)
+    YS_CONF["cver"] = cver
+    YS_CONF["at"] = now
+    log.log_add("inf", "search", "innertube config read, client %s"
+                % cver)
+    return YS_CONF, None
+
+
 def ys_innertube(q, lang, region):
-    url = YS_API + "?key=" + YS_KEY + "&prettyPrint=false"
+    cf, err = ys_conf(lang, region)
+    if err != None:
+        return None, "config: %s" % err
+    url = YS_API + "?key=" + cf["key"] + "&prettyPrint=false"
     pay = {}
-    pay["context"] = ys_ctx(lang, region)
+    pay["context"] = ys_ctx(lang, region, cf["cver"])
     pay["query"] = q
     pay["params"] = urllib.parse.unquote(YS_VIDONLY)
     body = json.dumps(pay).encode("utf-8")

@@ -114,6 +114,20 @@ else
   bad "model problem"; cat /tmp/model.err
 fi
 
+hdr "no hardcoded api keys"
+K=$(grep -rlE "AIza[0-9A-Za-z_-]{30,}" --include='*.py' \
+    --include='*.js' --include='*.sh' --include='*.json' \
+    --include='*.md' . 2>/dev/null | grep -v '^./site/' | wc -l)
+if [ "$K" = "0" ]; then
+  good "no google api key shaped literals in tracked files"
+else
+  bad "$K file(s) carry an AIza... literal"
+  grep -rlE "AIza[0-9A-Za-z_-]{30,}" --include='*.py' \
+    --include='*.js' --include='*.sh' --include='*.json' \
+    --include='*.md' . 2>/dev/null | grep -v '^./site/' \
+    | sed 's/^/        /'
+fi
+
 hdr "stdlib shadowing"
 if python3 -c "
 import os

@@ -544,3 +544,55 @@ FEATURE PLAN
     * zero OWNER/REPO placeholders left on any published page
     * the skill model is downloadable as json for copying into
       the amazon console from a phone
+
+
+0.3.3 - 2026-11-07
+------------------
+
+  github secret scanning opened "Google API Key, public leak"
+  against src/yt_search.py line 10.
+
+  what it actually was
+
+    * AIzaSy...11qcW8 is youtube's own public web client
+      InnerTube key. It is embedded in the html that
+      youtube.com serves to every anonymous visitor, verified
+      by curling the home page and finding the identical value.
+      It is not this account's credential, carries no quota
+      billed to anyone here, and nothing was exposed. The
+      scanner matches the AIzaSy shape and cannot tell a public
+      client key from a private one.
+
+  removed anyway, for a better reason
+
+    * hardcoding it meant breakage if google ever rotated it.
+      And the clientVersion sitting next to it was already
+      stale: the code said 2.20261001.00.00 while youtube was
+      serving 2.20261030.02.00. That is a real latent bug, not
+      a security one.
+    * ys_conf() now reads INNERTUBE_API_KEY and
+      INNERTUBE_CLIENT_VERSION out of the youtube home page on
+      first use and caches both for 6 hours. One extra request
+      per 6 hours, and the client version can no longer go
+      stale.
+    * if that read fails the search falls back to the html
+      ytInitialData scrape, which needs no key at all, so this
+      did not add a single point of failure.
+    * check.sh now fails if any tracked file carries an
+      AIza shaped literal, so this cannot come back.
+
+  on the alert itself
+
+    * the value stays in git history. Rewriting public history
+      is not warranted for a string youtube publishes to the
+      world. Dismiss the alert as a false positive.
+
+  checked by hand
+
+    * curling youtube.com returns the same key the code used,
+      proving it is public
+    * live search works with the key fetched at runtime, picks
+      up client 2.20261030.02.00 automatically
+    * the config is read once and reused on the next search
+    * no AIza literal left in the tree, and check.sh now
+      catches one if it reappears
