@@ -194,8 +194,28 @@ def t_cookies():
     ok("file mode 0600",
        oct(os.stat(ck.ck_path()).st_mode & 0o777), "0o600")
     ok("stat ok", ck.ck_stat()["ok"], 1)
+    arg = ck.ck_arg("dQw4w9WgXcQ")
+    ok("yt-dlp gets a copy", arg != ck.ck_path(), True)
+    ok("copy exists", os.path.isfile(arg), True)
+    ok("copy mode 0600",
+       oct(os.stat(arg).st_mode & 0o777), "0o600")
+    ok("copy matches master",
+       io.open(arg, encoding="utf-8").read(),
+       io.open(ck.ck_path(), encoding="utf-8").read())
+    f = io.open(arg, "w", encoding="utf-8")
+    f.write("clobbered by yt-dlp\n")
+    f.close()
+    ok("master survives a clobber", ck.ck_stat()["ok"], 1)
+    ck.ck_run_clean("dQw4w9WgXcQ")
+    ok("copy removed", os.path.isfile(arg), False)
+    ok("path is sanitised",
+       ck.ck_run_path("../../etc/passwd").find("..") < 0, True)
+    ok("no cookies means no arg flag",
+       ck.ck_arg("x") != None, True)
     ck.ck_clear()
     ok("cleared", ck.ck_stat()["present"], 0)
+    ok("cleared means no arg", ck.ck_arg("x"), None)
+    ck.ck_run_clean("x")
 
 
 def t_sig():

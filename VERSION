@@ -802,3 +802,103 @@ FEATURE PLAN
       to be rebuilt for every change and she speaks Hindi.
     * no name free invocation. It needs certification that a
       scraping skill will not get.
+
+
+0.4.1 - 2026-11-07
+------------------
+
+  four bugs found by running this on a real device, in a proot
+  Linux container rather than plain Termux. All four were mine.
+  They had been patched locally on the device, which meant the
+  next update would have erased them, so they are folded in
+  here with tests.
+
+  funnel mounted only one path
+
+    * bin/tunnel.sh ran "tailscale funnel --set-path=/alexa"
+      without --bg. That form runs in the foreground and
+      serves until killed, so the script blocked there forever
+      and the second call, the one that mounts /audio, never
+      ran. The tunnel looked healthy because /alexa answered.
+      Audio would have 404'd on the first song.
+    * both calls take --bg now.
+
+  stop left the server running
+
+    * bin/run.sh writes its own pid to the pid file and then
+      runs serve.py as a foreground child. SIGTERM to the
+      supervisor is not delivered to that child while bash is
+      waiting on it, so "ytalexa stop" reported success and
+      the port stayed open.
+    * run.sh now runs the child in the background, waits on
+      it, and traps TERM, INT and HUP to kill it and leave.
+    * cli stop signals the whole process group, then waits up
+      to ten seconds for the port to actually close, then
+      escalates to SIGKILL and says so. It only reports
+      stopped once the port is really down.
+
+  yt-dlp was eating the cookie jar
+
+    * yt-dlp writes back whatever jar it is given, and it had
+      already destroyed one component of the real cookie store
+      on the device. It was being handed the master file.
+    * ck_arg now copies the jar to a 0600
+      ckrun-<videoid>.txt per download and gives yt-dlp the
+      copy. au_tmp_clean removes it, so it goes on every exit
+      path including timeout, spawn failure and success.
+    * the two subprocess failure paths that did not clean up
+      at all now do.
+
+  the wizard could not see its own tunnel
+
+    * tailscaled in a container runs userspace against a
+      socket in $YTA_HOME, not the system one. st_tunnel
+      called plain "tailscale funnel status", which talks to
+      the system socket, so step 4 showed [ no ] while the
+      funnel was up and serving.
+    * all tailscale calls go through ts_cmd, which adds
+      --socket when that file exists and falls back to the
+      system socket if the private one answers nothing.
+
+  while in there
+
+    * four scripts had #!/data/data/com.termux/... hardcoded,
+      which is not a path outside Termux. All four are
+      /usr/bin/env bash now.
+    * new command: ytalexa up. Starts tailscaled userspace if
+      it is not answering, starts the server if the port is
+      down, mounts the funnel if it is not mounted, prints
+      status. Safe to re-run. A proot container has no
+      Termux:Boot, so this is the recovery path after Android
+      kills the container, and it is what a launcher button
+      should call.
+    * docs/SETUP-MOBILE.md has a section on container hosts:
+      no boot hook, no wake lock, running as root, and the
+      userspace tailscaled invocation.
+    * SECURITY.md documents the cookie copy.
+
+  checked by hand
+
+    * both shell scripts parse
+    * ck_arg returns a path that is not the master, 0600, with
+      matching contents; clobbering the copy leaves the master
+      valid; the copy is removed by the cleanup; a traversal
+      tag cannot escape the directory
+    * cli help lists up, version reports 0.4.1
+    * selftest is 102 assertions, up from 93
+    * full check.sh passes
+
+  known weak spots
+
+    * ytalexa up has no test. It needs tailscaled, a port and
+      a funnel, none of which exist in CI. The pieces it calls
+      are covered, the wiring is not.
+    * the funnel --bg fix is reasoned from the symptom the
+      device showed, not reproduced here, for the same reason.
+
+  still unproven
+
+    * no Echo has fetched audio from this server yet. The
+      skill was never invoked in any test so far, so the audio
+      format, the signed url and the radio queue remain
+      untested against hardware.

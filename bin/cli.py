@@ -29,6 +29,7 @@ usage: ytalexa <command> [args]
   console            print the console url and token
   cookies <file>     load a cookies.txt
   tunnel [mode]      bring up the tunnel, default tailscale
+  up                 start everything after a restart
   update             upgrade yt-dlp and ytmusicapi
   logs [n]           print the last n log lines, default 40
   version            print the version
@@ -61,6 +62,26 @@ def pid_read():
     return n
 
 
+def kill_tree(n, sig):
+    done = -1
+    try:
+        g = os.getpgid(n)
+    except OSError:
+        g = 0
+    if g > 1 and g == n:
+        try:
+            os.killpg(g, sig)
+            done = 0
+        except OSError:
+            done = -1
+    try:
+        os.kill(n, sig)
+        done = 0
+    except OSError:
+        pass
+    return done
+
+
 def c_setup(argv):
     wz.wz_main()
     return 0
@@ -79,13 +100,25 @@ def c_stop(argv):
     if n == 0:
         sys.stdout.write("running but no pid file, kill by hand\n")
         return 1
-    try:
-        os.kill(n, signal.SIGTERM)
-    except OSError as e:
-        sys.stdout.write("kill failed: %r\n" % e)
+    if kill_tree(n, signal.SIGTERM) != 0:
+        sys.stdout.write("kill failed for pid %d\n" % n)
         return 1
-    sys.stdout.write("stopped pid %d\n" % n)
-    return 0
+    import time
+    i = 0
+    while i < 40:
+        if wz.port_up(c0["port"]) == 0:
+            sys.stdout.write("stopped pid %d\n" % n)
+            return 0
+        time.sleep(0.25)
+        i = i + 1
+    kill_tree(n, signal.SIGKILL)
+    time.sleep(0.5)
+    if wz.port_up(c0["port"]) == 0:
+        sys.stdout.write("stopped pid %d, needed SIGKILL\n" % n)
+        return 0
+    sys.stdout.write("port %d still open after SIGKILL\n"
+                     % c0["port"])
+    return 1
 
 
 def c_restart(argv):
@@ -162,6 +195,52 @@ def c_cookies(argv):
     return 0
 
 
+def c_up(argv):
+    import time
+    c0 = cfg.cfg_load()
+    sk = wz.ts_sock()
+    if wz.have("tailscaled") == 1:
+        rc, txt = wz.run(wz.ts_cmd(["status"]), 10)
+        if rc != 0:
+            sys.stdout.write("starting tailscaled userspace\n")
+            st = os.path.join(cfg.cfg_home(), "tailscale")
+            lg = os.path.join(cfg.cfg_home(), "tailscaled.log")
+            f = open(lg, "a")
+            subprocess.Popen(["tailscaled",
+                              "--tun=userspace-networking",
+                              "--statedir=" + st,
+                              "--socket=" + sk],
+                             stdout=f, stderr=f,
+                             stdin=subprocess.DEVNULL,
+                             start_new_session=True)
+            i = 0
+            while i < 20:
+                time.sleep(0.5)
+                rc, txt = wz.run(wz.ts_cmd(["status"]), 10)
+                if rc == 0:
+                    break
+                i = i + 1
+        if rc != 0:
+            sys.stdout.write("tailscale is logged out, run once:\n")
+            sys.stdout.write("  tailscale --socket=%s up\n" % sk)
+            return 1
+    if wz.port_up(c0["port"]) == 0:
+        rc = wz.do_start()
+        if rc != 0:
+            return rc
+        i = 0
+        while i < 20:
+            if wz.port_up(c0["port"]) == 1:
+                break
+            time.sleep(0.5)
+            i = i + 1
+    else:
+        sys.stdout.write("server already up on %d\n" % c0["port"])
+    if wz.st_tunnel() != 1:
+        c_tunnel([])
+    return c_status([])
+
+
 def c_tunnel(argv):
     mode = "tailscale"
     if len(argv) > 0:
@@ -232,6 +311,7 @@ CMDS = {
     "console": c_console,
     "cookies": c_cookies,
     "tunnel": c_tunnel,
+    "up": c_up,
     "update": c_update,
     "logs": c_logs,
     "version": c_version,

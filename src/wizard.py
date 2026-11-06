@@ -163,8 +163,40 @@ def st_server():
     return port_up(cfg.cfg_load()["port"])
 
 
+def have(name):
+    paths = os.environ.get("PATH", "").split(os.pathsep)
+    i = 0
+    while i < len(paths):
+        d = paths[i]
+        i = i + 1
+        if d == "":
+            continue
+        p = os.path.join(d, name)
+        if os.path.isfile(p) and os.access(p, os.X_OK):
+            return 1
+    return 0
+
+
+def ts_sock():
+    return os.path.join(cfg.cfg_home(), "tailscaled.sock")
+
+
+def ts_cmd(args):
+    sk = ts_sock()
+    out = ["tailscale"]
+    if os.path.exists(sk):
+        out.append("--socket=" + sk)
+    i = 0
+    while i < len(args):
+        out.append(args[i])
+        i = i + 1
+    return out
+
+
 def st_tunnel():
-    rc, txt = run(["tailscale", "funnel", "status"], 10)
+    rc, txt = run(ts_cmd(["funnel", "status"]), 10)
+    if rc != 0 and os.path.exists(ts_sock()):
+        rc, txt = run(["tailscale", "funnel", "status"], 10)
     if rc != 0:
         return -1
     if txt.find("/alexa") >= 0:

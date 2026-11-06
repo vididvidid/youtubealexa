@@ -1,4 +1,4 @@
-#!/data/data/com.termux/files/usr/bin/bash
+#!/usr/bin/env bash
 set -u
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
@@ -25,10 +25,31 @@ fi
 echo $$ > "$PIDFILE"
 echo "logging to $LOGFILE"
 
+KID=0
+STOP=0
+
+bye() {
+  STOP=1
+  if [ "$KID" != "0" ]; then
+    kill -TERM "$KID" 2>/dev/null
+    wait "$KID" 2>/dev/null
+  fi
+  rm -f "$PIDFILE"
+  exit 0
+}
+
+trap bye TERM INT HUP
+
 while true; do
   echo "--- start $(date -Iseconds)" >> "$LOGFILE"
-  python3 "$HERE/bin/serve.py" >> "$LOGFILE" 2>&1
+  python3 "$HERE/bin/serve.py" >> "$LOGFILE" 2>&1 &
+  KID=$!
+  wait "$KID"
   RC=$?
+  KID=0
+  if [ "$STOP" = "1" ]; then
+    break
+  fi
   echo "--- exit rc=$RC $(date -Iseconds)" >> "$LOGFILE"
   if [ "$RC" = "0" ]; then
     break

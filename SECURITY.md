@@ -35,6 +35,13 @@ What is actually sensitive
 All three live in $YTA_HOME, which defaults to ~/.ytalexa. The
 directory is mode 0700 and the files are written 0600.
 
+yt-dlp rewrites whatever cookie jar it is given, so it is
+never handed the master file. Each download gets a 0600 copy
+at $YTA_HOME/ckrun-<videoid>.txt, which is deleted when the
+download ends, on both the success and the failure path. A
+yt-dlp that corrupts or truncates its jar damages the copy
+and nothing else.
+
 Never put cookies on /sdcard or in any shared storage. Any
 Android app holding the storage permission can read that, and
 these are credentials, not preferences. The loader prints a

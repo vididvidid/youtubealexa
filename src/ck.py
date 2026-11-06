@@ -26,10 +26,49 @@ def ck_have():
     return 0
 
 
-def ck_arg():
+def ck_tag(tag):
+    out = ""
+    i = 0
+    while i < len(tag) and i < 24:
+        ch = tag[i]
+        i = i + 1
+        if ch.isalnum() or ch == "-" or ch == "_":
+            out = out + ch
+    if out == "":
+        out = "run"
+    return out
+
+
+def ck_run_path(tag):
+    return os.path.join(cfg.cfg_home(),
+                        "ckrun-" + ck_tag(tag) + ".txt")
+
+
+def ck_run_clean(tag):
+    p = ck_run_path(tag)
+    try:
+        if os.path.isfile(p):
+            os.remove(p)
+    except OSError:
+        pass
+
+
+def ck_arg(tag):
     if ck_have() == 0:
         return None
-    return ck_path()
+    dst = ck_run_path(tag)
+    try:
+        f = open(ck_path(), "rb")
+        body = f.read()
+        f.close()
+        fd = os.open(dst, os.O_WRONLY | os.O_CREAT | os.O_TRUNC,
+                     0o600)
+        os.write(fd, body)
+        os.close(fd)
+    except OSError as e:
+        log.log_add("wrn", "cookie", "copy failed %r" % e)
+        return None
+    return dst
 
 
 def ck_parse(text):

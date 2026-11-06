@@ -125,7 +125,7 @@ def au_cmd(vid, out, c):
         args.append("m4a")
     else:
         args.append(AU_FMT)
-    arg = ck.ck_arg()
+    arg = ck.ck_arg(vid)
     if arg != None:
         args.append("--cookies")
         args.append(arg)
@@ -141,6 +141,7 @@ def au_tmp(vid):
 
 
 def au_tmp_clean(vid):
+    ck.ck_run_clean(vid)
     d = au_dir()
     pre = "tmp-" + vid
     try:
@@ -193,11 +194,13 @@ def au_run(vid, c):
                            stderr=subprocess.STDOUT,
                            timeout=c["fetch_tmo"])
     except FileNotFoundError:
+        au_tmp_clean(vid)
         return -1, "yt-dlp not found: %s" % c["ytdlp_bin"]
     except subprocess.TimeoutExpired:
         au_tmp_clean(vid)
         return -1, "timeout after %ds" % c["fetch_tmo"]
     except OSError as e:
+        au_tmp_clean(vid)
         return -1, "spawn failed %r" % e
     dt = time.time() - t0
     if r.returncode != 0:

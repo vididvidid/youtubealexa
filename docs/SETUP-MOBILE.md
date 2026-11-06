@@ -176,3 +176,51 @@ Keeping it alive
 
   Do that first whenever playback starts failing. It is the
   cause most of the time.
+
+
+Running in a Linux container instead of Termux
+----------------------------------------------
+
+Termux is not the only way. A proot Linux container on the
+same phone works, and so does any always on Linux box. The
+only thing this project needs is python 3.11 or newer, a
+process that stays alive, and a tunnel.
+
+Three things differ from plain Termux.
+
+  No Termux:Boot. A proot container has no boot hook, so the
+  autostart step of the wizard cannot help you. After a
+  reboot, or after Android kills the container, run:
+
+    ytalexa up
+
+  That starts tailscaled in userspace mode on the private
+  socket, starts the server if the port is down, mounts the
+  funnel if it is not mounted, and prints the status block.
+  It is safe to run when everything is already up, so it is
+  the right thing to put behind a launcher button or a one
+  tap shortcut.
+
+  No termux-wake-lock. The container cannot take an Android
+  wake lock. Android will suspend it eventually. Exclude the
+  container app from battery optimisation in Android settings
+  and keep the phone on the charger.
+
+  Running as root. A container often runs everything as root.
+  Nothing here needs root, and $YTA_HOME is still 0700, but
+  remember that root in the container can read the cookies.
+  Do not install anything else you do not trust in it.
+
+Tailscale in a container has no tun device, so tailscaled must
+run in userspace mode against a socket inside $YTA_HOME rather
+than the system one:
+
+  tailscaled --tun=userspace-networking \
+    --statedir=$HOME/.ytalexa/tailscale \
+    --socket=$HOME/.ytalexa/tailscaled.sock &
+
+  tailscale --socket=$HOME/.ytalexa/tailscaled.sock up
+
+bin/tunnel.sh already starts it this way, and every tailscale
+call in the wizard passes that socket when the file exists, so
+you only run the login by hand once.

@@ -1,4 +1,4 @@
-#!/data/data/com.termux/files/usr/bin/bash
+#!/usr/bin/env bash
 set -u
 
 MODE="${1:-tailscale}"
@@ -30,9 +30,9 @@ if [ "$MODE" = "tailscale" ]; then
     exit 1
   }
   echo "mounting only /alexa and /audio"
-  tailscale --socket="$STATE/tailscaled.sock" funnel \
+  tailscale --socket="$STATE/tailscaled.sock" funnel --bg \
     --set-path=/alexa "http://127.0.0.1:$PORT/alexa" || exit 1
-  tailscale --socket="$STATE/tailscaled.sock" funnel \
+  tailscale --socket="$STATE/tailscaled.sock" funnel --bg \
     --set-path=/audio "http://127.0.0.1:$PORT/audio" || exit 1
   tailscale --socket="$STATE/tailscaled.sock" funnel status
   exit 0
