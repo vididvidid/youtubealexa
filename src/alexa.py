@@ -13,6 +13,7 @@ import yt_search as ys
 AX_SLOT = "query"
 AX_INTENT = "PlayIntent"
 AX_TRY = 3
+AX_SAY_MAX = 48
 AX_PATH = "/audio/"
 
 
@@ -38,24 +39,35 @@ def ax_user(body):
     return "anon"
 
 
+def ax_app_ids(body):
+    out = []
+    s = ax_dict(body, "session")
+    a = ax_dict(s, "application")
+    if type(a.get("applicationId")) == str:
+        out.append(a["applicationId"])
+    ctx = ax_dict(body, "context")
+    sy = ax_dict(ctx, "System")
+    a = ax_dict(sy, "application")
+    if type(a.get("applicationId")) == str:
+        out.append(a["applicationId"])
+    return out
+
+
 def ax_app_ok(body, c):
     want = c["skill_id"]
     if want == "":
         return 0
-    got = ""
-    s = ax_dict(body, "session")
-    a = ax_dict(s, "application")
-    if type(a.get("applicationId")) == str:
-        got = a["applicationId"]
-    if got == "":
-        ctx = ax_dict(body, "context")
-        sy = ax_dict(ctx, "System")
-        a = ax_dict(sy, "application")
-        if type(a.get("applicationId")) == str:
-            got = a["applicationId"]
-    if got == want:
-        return 0
-    log.log_add("err", "alexa", "skill id mismatch %r" % got[:48])
+    got = ax_app_ids(body)
+    i = 0
+    while i < len(got):
+        if got[i] == want:
+            return 0
+        i = i + 1
+    seen = "none"
+    if len(got) > 0:
+        seen = got[0]
+    log.log_add("err", "alexa", "skill id mismatch %r"
+                % seen[:48])
     return -1
 
 
@@ -197,7 +209,9 @@ def ax_start(req, user, st, idx, off, c, loc, behav):
     ax_prefetch(user, idx + 1, c)
     say = sp.sp_get(loc, "playing")
     if c["say_title"] == 1 and e["title"] != "":
-        say = e["title"][:90] + ". " + say
+        nm = sp.sp_title(e["title"], AX_SAY_MAX)
+        if nm != "":
+            say = nm + ". " + say
     log.log_add("inf", "alexa", "play idx=%d %s %r"
                 % (idx, e["vid"], e["title"][:52]))
     return ax_rsp(say, None, True, [d])
@@ -380,7 +394,11 @@ def ax_route(req):
     if typ == "PlaybackController.PauseCommandIssued":
         return ax_rsp(None, None, True, [ax_stop_dir()])
     if typ == "SessionEndedRequest":
-        return ax_rsp(None, None, True, None)
+        rsn = rq.get("reason")
+        if rsn == "ERROR":
+            log.log_add("err", "alexa", "session error: %s"
+                        % str(rq.get("error"))[:140])
+        return hc.rsp_bytes(200, "application/json", b"")
     if typ == "System.ExceptionEncountered":
         log.log_add("err", "alexa", "device exception: %s"
                     % str(rq.get("error"))[:140])

@@ -294,6 +294,55 @@ def t_elicit():
     ok("name avoids music words", hit, 0)
 
 
+def t_title():
+    grp("spoken title")
+    real = ("\u0932\u0917 \u091c\u093e \u0917\u0932\u0947 "
+            "\u092b\u0941\u0932 \u0935\u0940\u0921\u093f\u092f\u094b "
+            "\u0938\u0949\u0928\u094d\u0917 | \u092d\u0942\u092e\u093f"
+            " | \u0930\u093e\u0939\u0924")
+    want = "\u0932\u0917 \u091c\u093e \u0917\u0932\u0947"
+    ok("real title from the device", sp.sp_title(real, 48),
+       want)
+    ok("english noise",
+       sp.sp_title("Tum Hi Ho (Official Video) | Aashiqui 2",
+                   48), "Tum Hi Ho")
+    ok("dash and hd",
+       sp.sp_title("Kabhi Kabhie Aditi - Full Song HD | X", 48),
+       "Kabhi Kabhie Aditi")
+    ok("clean title untouched",
+       sp.sp_title("Chaudhary", 48), "Chaudhary")
+    ok("not a string", sp.sp_title(None, 48), "")
+    ok("empty stays empty", sp.sp_title("", 48), "")
+    ok("all noise collapses",
+       sp.sp_title("Official Video", 48), "")
+    long = "a" * 60 + " tail"
+    ok("hard cap", len(sp.sp_title(long, 48)) <= 48, True)
+    ok("breaks on a space",
+       sp.sp_title("one two three four five six seven eight "
+                   "nine ten eleven", 20).endswith(" "), False)
+    ok("noise list longest first",
+       sp.SP_NOISE[0], "official music video")
+
+
+def t_app_id():
+    grp("skill id check")
+    good = "amzn1.ask.skill.GOOD"
+    b = {"session": {"application":
+                     {"applicationId": "amzn1.ask.skill.BAD"}},
+         "context": {"System": {"application":
+                     {"applicationId": good}}}}
+    ok("accepts the context copy",
+       ax.ax_app_ok(b, {"skill_id": good}), 0)
+    ok("rejects when neither matches",
+       ax.ax_app_ok(b, {"skill_id": "amzn1.ask.skill.X"}), -1)
+    ok("unset skill id allows all",
+       ax.ax_app_ok(b, {"skill_id": ""}), 0)
+    ok("both ids seen", len(ax.ax_app_ids(b)), 2)
+    ok("missing ids", ax.ax_app_ids({}), [])
+    ok("rejects when nothing is present",
+       ax.ax_app_ok({}, {"skill_id": good}), -1)
+
+
 def t_cfg():
     grp("config")
     c = cfg.cfg_load()
@@ -338,6 +387,8 @@ def main():
     t_cookies()
     t_sig()
     t_elicit()
+    t_title()
+    t_app_id()
     t_cfg()
     t_speak()
     sys.stdout.write("\n%s\n" % ("-" * 46))

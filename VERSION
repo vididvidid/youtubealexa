@@ -902,3 +902,75 @@ FEATURE PLAN
       skill was never invoked in any test so far, so the audio
       format, the signed url and the radio queue remain
       untested against hardware.
+
+
+0.4.2 - 2026-11-07
+------------------
+
+  the skill answered for the first time. "सुरीली पेटी खोलो"
+  reached the server, the welcome came back with the elicit
+  directive, and a bare "लग जा गले" with no carrier phrase
+  filled the AMAZON.SearchQuery slot:
+
+    "intent": {"name": "PlayIntent", "slots": {"query":
+      {"value": "लग जा गले", "source": "USER"}}},
+    "dialogState": "IN_PROGRESS"
+
+  the reply was an AudioPlayer.Play for _Q5LH2DLd_8, the
+  T-Series original, on a signed tunnel url. That settles the
+  one thing recorded in 0.4.0 as unprovable from Amazon's
+  documentation: ElicitSlot does capture an utterance with no
+  carrier phrase. The two turn design holds.
+
+  three things the transcript exposed.
+
+  the spoken title was unusable
+
+    * she would have heard "लग जा गले फुल वीडियो सॉन्ग | भूमि
+      | राहत फ़तेह अली खान | सचिन-जिगर | अदिति राव हैदरी |.
+      बजा रही हूँ।" before any music. Ninety characters of
+      pipe separated credits, read aloud, every song.
+    * sp_title cuts at the first separator, removes video
+      noise in English and Hindi, squashes space, trims
+      punctuation and caps at 48 characters on a word
+      boundary. That title now speaks as "लग जा गले".
+    * the AudioPlayer metadata keeps the full title, since
+      that is displayed rather than spoken.
+
+  the session end reply was rejected
+
+    * the console said "रिक्वेस्ट की गई स्किल ने ठीक
+      प्रतिक्रिया नहीं दी है" after an empty input. Alexa had
+      sent SessionEndedRequest and this code answered with a
+      response body. A skill must not reply to that request.
+    * it returns 200 with an empty body now, and logs the
+      error payload when the reason is ERROR, which is where
+      device side playback failures will show up.
+
+  the skill id check read only one field
+
+    * ax_app_ok took session.application.applicationId and
+      only fell back to context.System.application when the
+      first was absent. Both are present on a real request.
+      If they ever disagree, the request was refused.
+    * it collects both and accepts a match from either.
+
+  checked by hand
+
+    * the device's real title reduces to "लग जा गले"; English
+      forms with (Official Video), - Full Song HD and
+      | Lyrical Video reduce correctly; a clean title is
+      untouched; an all noise title collapses to empty and
+      falls back to the plain "बजा रही हूँ।"
+    * a mismatched session id with a matching context id is
+      accepted, neither matching is refused, unset allows all
+    * selftest is 118 assertions, up from 102
+    * full check.sh passes
+
+  still unproven
+
+    * no Echo has fetched audio yet. The simulator shows the
+      directive but cannot play it, so itag 140 in an m4a
+      container, the signed url over the funnel, and the
+      ENQUEUE handoff to the next song are all still untested
+      against hardware. That is the whole of what is left.
