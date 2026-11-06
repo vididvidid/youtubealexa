@@ -46,9 +46,8 @@ A2. One command
 
 Open Termux and paste:
 
-  curl -fsSL \
-    https://raw.githubusercontent.com/OWNER/REPO/main/install.sh \
-    | bash
+  R=https://github.com/vididvidid/youtubealexa/releases
+  curl -fsSL $R/latest/download/install.sh | bash
 
 The path in that URL is the repository being installed from,
 so use your own if you forked this. That script does:
@@ -64,7 +63,7 @@ so use your own if you forked this. That script does:
 If you prefer the Termux package:
 
   pkg install -y python openssl-tool ffmpeg termux-api
-  curl -fsSLO https://github.com/OWNER/REPO/releases/latest/download/ytalexa.deb
+  curl -fsSLO $R/latest/download/ytalexa.deb
   dpkg -i ytalexa.deb
   ytalexa setup
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -u
 
-REPO="${YTA_REPO:-OWNER/REPO}"
+REPO="${YTA_REPO:-vididvidid/youtubealexa}"
 BRANCH="${YTA_BRANCH:-main}"
 DEST="${YTA_DEST:-$HOME/ytalexa}"
 
@@ -13,10 +13,10 @@ say "  ytalexa installer"
 say "  ================="
 say ""
 
-if [ "$REPO" = "OWNER/REPO" ]; then
-  die "set YTA_REPO, for example:
-    curl -fsSL <url>/install.sh | YTA_REPO=you/ytalexa bash"
-fi
+case "$REPO" in
+  */*) ;;
+  *) die "YTA_REPO must look like owner/name, got: $REPO" ;;
+esac
 
 IS_TERMUX=0
 if [ -n "${PREFIX:-}" ] && [ -d "$PREFIX/bin" ] \

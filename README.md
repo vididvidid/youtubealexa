@@ -39,7 +39,8 @@ create a Pages site.
 Either in the web UI, Settings, Pages, Source: GitHub Actions.
 Or once with the gh cli:
 
-  gh api -X POST repos/OWNER/REPO/pages -f build_type=workflow
+  gh api -X POST repos/vididvidid/youtubealexa/pages \
+    -f build_type=workflow
 
 After that every push that touches the docs republishes the
 site by itself.
@@ -50,9 +51,8 @@ install
 
 In Termux, one line:
 
-  curl -fsSL \
-    https://raw.githubusercontent.com/OWNER/REPO/main/install.sh \
-    | bash
+  R=https://github.com/vididvidid/youtubealexa/releases
+  curl -fsSL $R/latest/download/install.sh | bash
 
 The path in that URL is the repository being installed from,
 so use your own if you forked this. Then:

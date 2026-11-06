@@ -114,6 +114,20 @@ else
   bad "model problem"; cat /tmp/model.err
 fi
 
+hdr "no unresolved placeholders"
+PAT="OWNER[/]REPO"
+P=$(grep -rlE "$PAT" --include='*.md' --include='*.sh' \
+    --include='*.py' --include='*.yml' --include='*.json' . \
+    2>/dev/null | grep -v '^./site/' | wc -l)
+if [ "$P" = "0" ]; then
+  good "no repo-slug placeholder left in tracked files"
+else
+  bad "$P file(s) still carry the slug placeholder"
+  grep -rlE "$PAT" --include='*.md' --include='*.sh' \
+    --include='*.py' --include='*.yml' --include='*.json' . \
+    2>/dev/null | grep -v '^./site/' | sed 's/^/        /'
+fi
+
 hdr "no hardcoded api keys"
 K=$(grep -rlE "AIza[0-9A-Za-z_-]{30,}" --include='*.py' \
     --include='*.js' --include='*.sh' --include='*.json' \

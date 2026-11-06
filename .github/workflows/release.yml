@@ -50,7 +50,7 @@ jobs:
           cp VERSION README.md SETUP.md TEST.md \
              SECURITY.md requirements.txt vercel.json \
              stage/ytalexa/
-          sed "s|OWNER/REPO|$SLUG|g" install.sh \
+          sed "s|vididvidid/youtubealexa|$SLUG|g" install.sh \
              > stage/ytalexa/install.sh
           chmod +x stage/ytalexa/install.sh
           mkdir -p stage/ytalexa/cache
@@ -64,7 +64,7 @@ jobs:
         env:
           SLUG: ${{ github.repository }}
         run: |
-          sed -i "s|OWNER/REPO|$SLUG|g" tools/mkdeb.sh
+          sed -i "s|vididvidid/youtubealexa|$SLUG|g" tools/mkdeb.sh
           bash tools/mkdeb.sh dist
 
       - name: verify the tarball installs and runs

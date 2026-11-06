@@ -37,9 +37,9 @@ jobs:
           SLUG: ${{ github.repository }}
         run: |
           for f in site/*.html; do
-            sed -i "s|OWNER/REPO|$SLUG|g" "$f"
+            sed -i "s|vididvidid/youtubealexa|$SLUG|g" "$f"
           done
-          sed "s|OWNER/REPO|$SLUG|g" install.sh > site/install.sh
+          sed "s|vididvidid/youtubealexa|$SLUG|g" install.sh > site/install.sh
           chmod +x site/install.sh
           echo "substituted $SLUG"
           grep -o "https://[^ \"<]*install.sh" site/index.html \

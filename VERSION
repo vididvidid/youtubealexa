@@ -596,3 +596,56 @@ FEATURE PLAN
     * the config is read once and reused on the next search
     * no AIza literal left in the tree, and check.sh now
       catches one if it reappears
+
+
+0.3.4 - 2026-11-07
+------------------
+
+  the documented install command did not work. my fault, and
+  the first thing a real user hit.
+
+  what went wrong
+
+    * install.sh shipped with REPO defaulting to the literal
+      OWNER/REPO, and the CI substitution only rewrote two
+      copies: the one published to the Pages site and the one
+      attached to a release.
+    * but every document pointed at
+      raw.githubusercontent.com/.../main/install.sh, which
+      serves the file straight out of the repo, placeholder and
+      all. So following the instructions gave
+      "error: set YTA_REPO".
+    * the release asset was fine the whole time. The docs were
+      pointing at the one copy that was never substituted.
+
+  fixed
+
+    * the real slug is committed everywhere now instead of a
+      placeholder, so the raw url works too. Nothing depends on
+      a substitution step having run.
+    * CI still rewrites the slug, but it now matches the real
+      one rather than a placeholder, so a fork gets its own
+      path and this repo is unaffected.
+    * every document now gives the release download url as the
+      install command, not the raw one. The release asset is
+      versioned and CI smoke tests it before publishing, so it
+      is the better path regardless.
+    * install.sh no longer checks for a placeholder. It checks
+      that REPO looks like owner/name.
+    * check.sh fails if any tracked file still carries the slug
+      placeholder. The guard uses a bracket expression so it
+      does not match its own source, which it did on the first
+      attempt.
+
+  checked by hand
+
+    * reproduced the original failure from the raw url, then
+      confirmed it gone
+    * ran install.sh end to end in a sandboxed HOME: resolved
+      the repo, installed the deps, pulled and unpacked the
+      release tarball, wrote the launcher, warned that the bin
+      dir was off PATH, and reported version 0.3.3
+    * the installed launcher runs, status prints, and the
+      wizard shows all five dependencies green
+    * the placeholder guard catches a planted OWNER slash REPO
+      and passes on a clean tree

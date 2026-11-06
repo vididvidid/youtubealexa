@@ -36,7 +36,7 @@ Depends: python, openssl-tool, ffmpeg
 Recommends: termux-api
 Section: sound
 Priority: optional
-Homepage: https://github.com/OWNER/REPO
+Homepage: https://github.com/vididvidid/youtubealexa
 Description: Hindi voice search for YouTube audio on an Echo
  Serves YouTube audio to an Amazon Echo from a phone running
  Termux, driven by a custom Alexa skill in Hindi. Search goes

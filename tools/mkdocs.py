@@ -27,8 +27,9 @@ MD_RAW = [
      "Skill model", "Paste into Amazon"]
 ]
 
-MD_RAW_URL = ("https://raw.githubusercontent.com"
-              "/OWNER/REPO/main/install.sh")
+MD_SLUG = "vididvidid/youtubealexa"
+MD_INSTALL_URL = ("https://github.com/" + MD_SLUG
+                  + "/releases/latest/download/install.sh")
 
 URL_RE = re.compile(r"(https?://[^\s<>\"')\]\\]+?)([.,;:)\]\\]*)(?=\s|$)")
 SLUG_RE = re.compile(r"[^a-z0-9]+")
@@ -298,7 +299,7 @@ See <a href="vercel.html">Vercel</a> and
 <a href="domain.html">Custom domain</a>.</p>
 <p class="dim">version %s</p>
 """ % ("\n".join(cards), esc(ver))
-    body = body.replace("@@I@@", MD_RAW_URL)
+    body = body.replace("@@I@@", MD_INSTALL_URL)
     return shell("Docs", nav("index.html", pages), "", body)
 
 
