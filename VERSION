@@ -974,3 +974,39 @@ FEATURE PLAN
       container, the signed url over the funnel, and the
       ENQUEUE handoff to the next song are all still untested
       against hardware. That is the whole of what is left.
+
+
+0.4.3 - 2026-11-07
+------------------
+
+  docs only, no code.
+
+  he went looking for the skill in the Alexa app's store and
+  could not find it, which is correct behaviour and a gap in
+  my instructions, not his mistake. SETUP.md went straight
+  from testing in the simulator to talking to the Echo and
+  never said how the skill gets onto the device.
+
+  what was missing
+
+    * a skill in the Development stage is never in the store.
+      The store lists certified skills, and this one cannot be
+      certified because it reads YouTube. Searching for it
+      will always fail.
+    * Amazon puts a Development stage skill on every Echo
+      signed in to the same account as the developer console
+      by itself. There is no install and no enable.
+    * the three conditions that have to hold: same Amazon
+      account on the Echo as the console, testing set to
+      Development, and the device language set to Hindi.
+    * the language one is the trap. The interaction model is
+      hi-IN and nothing else, so an Echo on English (India)
+      cannot invoke it and says nothing useful when it fails.
+      Set Hindi first, get a song out of it, and only then
+      try the bilingual setting, as a separate change.
+    * the Dev tab under Your Skills is where it can be seen,
+      but it is a confirmation, not a switch.
+
+  new SETUP.md B7 covers all of it, the old B7 is B8, and
+  TEST.md phase 5 opens with the same three checks so they
+  get done before anyone debugs the server.

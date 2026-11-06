@@ -278,7 +278,63 @@ will say which:
   wrong skill       skill_id in config does not match
 
 
-B7. The real thing
+B7. Getting it onto the Echo
+----------------------------
+
+There is nothing to install. Do not look for it in the Alexa
+app's skill store and do not try to enable it. A skill in
+development is never listed there; the store only carries
+skills that passed certification, and this one never will,
+because it reads YouTube. Searching for "ytalexa" will always
+come up empty and that is correct.
+
+What actually happens is that Amazon puts a skill that is in
+the Development stage onto every Echo signed in to the same
+account as the developer console. No install step, no enable
+step. If the three things below are true it is already there.
+
+  1  The Echo is signed in to the same Amazon account as the
+     developer console.
+
+     Alexa app, More, Settings, Your Profile. The email there
+     has to be the one you log in to developer.amazon.com
+     with. This is the usual reason a development skill never
+     appears: a household where the Echo was set up on a
+     different family account.
+
+  2  Skill testing is set to Development, not Off.
+
+     Developer console, Test tab, the dropdown at the top
+     left. You have already done this if you tested in the
+     simulator.
+
+  3  The Echo's language is Hindi.
+
+     Alexa app, Devices, Echo and Alexa, pick the device,
+     Language. Choose हिन्दी.
+
+     This one matters more than it looks. The skill has a
+     hi-IN interaction model and nothing else. An Echo set to
+     English (India) cannot invoke it at all, and it will not
+     tell you why; the invocation name simply does nothing or
+     falls through to Alexa's own music. Set the device to
+     Hindi first and get a song playing. Try the bilingual
+     Hindi and English setting afterwards if you want it, as
+     a separate change, so you know which one broke it if it
+     stops working.
+
+If you want to see it listed, it is in the Alexa app under
+More, Skills and Games, Your Skills, then the Dev tab along
+the top. It carries a DEV badge. Seeing it there is a useful
+confirmation, but it is not where you turn it on, and the
+skill works whether or not you ever look at this screen.
+
+After changing the device language, give it a minute and say
+something simple to the Echo first, so you know the device
+came back up in Hindi before you blame the skill.
+
+
+B8. The real thing
 ------------------
 
 Say to the Echo:

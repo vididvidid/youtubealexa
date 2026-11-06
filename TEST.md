@@ -178,6 +178,21 @@ PHASE 5  THE ECHO
 Now the real thing. This is where unknowns show up, because
 the Echo fetches the audio itself.
 
+First, three things that have nothing to do with the code.
+There is no install step; a development skill is on every
+Echo signed in to the developer account already. Do not look
+for it in the skill store, it is not there and never will be.
+
+  [ ] Alexa app, More, Settings, Your Profile: the email
+      matches the developer console login
+  [ ] developer console, Test tab: Development, not Off
+  [ ] Alexa app, Devices, the Echo, Language: हिन्दी
+      an English (India) device cannot invoke a hi-IN only
+      skill and gives you no error saying so
+  [ ] optional sanity check: Alexa app, More, Skills and
+      Games, Your Skills, Dev tab, it is listed with a DEV
+      badge
+
   [ ] "अलेक्सा, सुरीली पेटी"            -> she asks what to play
   [ ] "लग जा गले"                     -> audio actually starts
   [ ] time from speaking to first sound: ____ seconds
