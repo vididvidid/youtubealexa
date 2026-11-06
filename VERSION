@@ -451,9 +451,21 @@ FEATURE PLAN
     * the site built and the OWNER/REPO substitution worked.
       actions/configure-pages then returned "Get Pages site
       failed ... verify that the repository has Pages enabled".
-    * passing enablement: true makes the workflow create the
-      Pages site itself, so there is no settings click to
-      remember and anyone cloning this gets the same behaviour.
+    * first attempt was enablement: true, so the workflow would
+      create the site itself. That does not work. The second run
+      failed with "Create Pages site failed. Resource not
+      accessible by integration": GITHUB_TOKEN is not allowed
+      to create a Pages site, whatever permissions the workflow
+      asks for.
+    * so this is a genuine one time manual step. Enabled with
+
+        gh api -X POST repos/OWNER/REPO/pages \
+          -f build_type=workflow
+
+      or Settings, Pages, Source: GitHub Actions. The
+      enablement flag was removed again, because without it
+      configure-pages prints the more useful message telling
+      you to enable Pages. Documented in README.
 
   every action was behind, and warning about it
 

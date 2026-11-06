@@ -28,6 +28,23 @@ including streamed output, and Cloudflare's CDN terms disallow
 proxying large media that is not hosted on Cloudflare.
 
 
+one time, on github
+-------------------
+
+Pages has to be switched on once by a repository admin. The
+workflow cannot do it for you: GITHUB_TOKEN is refused with
+"Resource not accessible by integration" when it tries to
+create a Pages site.
+
+Either in the web UI, Settings, Pages, Source: GitHub Actions.
+Or once with the gh cli:
+
+  gh api -X POST repos/OWNER/REPO/pages -f build_type=workflow
+
+After that every push that touches the docs republishes the
+site by itself.
+
+
 install
 -------
 
