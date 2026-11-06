@@ -46,9 +46,12 @@ A2. One command
 
 Open Termux and paste:
 
-  curl -fsSL https://raw.githubusercontent.com/OWNER/REPO/main/install.sh | bash
+  curl -fsSL \
+    https://raw.githubusercontent.com/OWNER/REPO/main/install.sh \
+    | bash
 
-Replace OWNER/REPO with your GitHub path. That script does:
+The path in that URL is the repository being installed from,
+so use your own if you forked this. That script does:
 
   * checks it is really running on Termux
   * installs python, openssl, ffmpeg, termux-api, git

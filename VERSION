@@ -497,3 +497,50 @@ FEATURE PLAN
     * all three workflows still parse as yaml after the bumps
     * wizard dependency step shows the python row correctly
     * status, help and version all exit 0 when piped to head
+
+
+0.3.2 - 2026-11-07
+------------------
+
+  ci green, pages live at
+  https://vididvidid.github.io/youtubealexa/
+
+  three bugs in the generated site, all found by looking at the
+  real published pages rather than the local build.
+
+    * the install command rendered as one line with the
+      backslashes missing and doubled spaces. The wrapped
+      command sat inside mkdocs.py's own triple quoted string,
+      where a trailing backslash is a line continuation, so
+      python ate both the newline and the backslash before the
+      html was ever written. The url is a module constant now
+      and the pre block is one clean line.
+    * the url auto linker swallowed a trailing backslash into
+      the href, giving a dead link. Its character class allowed
+      backslash. Now trailing \ . , ; : ) ] are pushed back out
+      of the link, which also fixes urls at the end of a
+      sentence.
+    * wrapping the curl in SETUP.md and README.md put the last
+      segment at column 0, and the parser treats column 0 as
+      prose, so "install.sh | bash" was lifted out of the code
+      block into its own paragraph. Every continuation line is
+      indented now and the command stays in one pre, 79 columns
+      wide even after the repo name is substituted.
+
+  also
+
+    * "Replace OWNER/REPO with your GitHub path" became
+      "Replace vididvidid/youtubealexa with your GitHub path"
+      once CI substituted the slug, which reads as nonsense.
+      Reworded so it is correct in both states.
+
+  verified against the live site
+
+    * index, setup, test, mobile, domain, interaction, style
+      and install.sh all return 200 with the right content type
+    * install.sh is served with REPO defaulting to
+      vididvidid/youtubealexa, so the one line installer needs
+      no editing
+    * zero OWNER/REPO placeholders left on any published page
+    * the skill model is downloadable as json for copying into
+      the amazon console from a phone

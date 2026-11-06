@@ -50,10 +50,12 @@ install
 
 In Termux, one line:
 
-  curl -fsSL https://raw.githubusercontent.com/OWNER/REPO/main/\
-install.sh | bash
+  curl -fsSL \
+    https://raw.githubusercontent.com/OWNER/REPO/main/install.sh \
+    | bash
 
-Then:
+The path in that URL is the repository being installed from,
+so use your own if you forked this. Then:
 
   ytalexa setup
 

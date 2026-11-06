@@ -25,7 +25,10 @@ MD_RAW = [
      "Skill model", "Paste into Amazon"]
 ]
 
-URL_RE = re.compile(r"(https?://[^\s<>\"')\]]+)")
+MD_RAW_URL = ("https://raw.githubusercontent.com"
+              "/OWNER/REPO/main/install.sh")
+
+URL_RE = re.compile(r"(https?://[^\s<>\"')\]\\]+?)([.,;:)\]\\]*)(?=\s|$)")
 SLUG_RE = re.compile(r"[^a-z0-9]+")
 
 
@@ -38,7 +41,7 @@ def esc(t):
 
 
 def linkify(t):
-    return URL_RE.sub(r'<a href="\1">\1</a>', t)
+    return URL_RE.sub(r'<a href="\1">\1</a>\2', t)
 
 
 def slug(t):
@@ -272,12 +275,11 @@ keeps going with a YouTube Music radio queue.</p>
 "लग जा गले"</pre>
 <h2 id="install">Install</h2>
 <p>In Termux, one line:</p>
-<pre>curl -fsSL \
-  https://raw.githubusercontent.com/OWNER/REPO/main/install.sh \
-  | bash</pre>
+<pre>curl -fsSL @@I@@ | bash</pre>
 <p>Then run the wizard and work down its numbered menu:</p>
 <pre>ytalexa setup</pre>
-<p>Replace OWNER/REPO with your GitHub path. Full steps are in
+<p>The path in that URL is the repository being installed
+from, so use your own if you forked this. Full steps are in
 <a href="setup.html">Setup</a>.</p>
 <h2 id="docs">Pages</h2>
 <div class="cards">%s</div>
@@ -294,6 +296,7 @@ See <a href="vercel.html">Vercel</a> and
 <a href="domain.html">Custom domain</a>.</p>
 <p class="dim">version %s</p>
 """ % ("\n".join(cards), esc(ver))
+    body = body.replace("@@I@@", MD_RAW_URL)
     return shell("Docs", nav("index.html", pages), "", body)
 
 
