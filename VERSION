@@ -31,6 +31,8 @@ FEATURE PLAN
   F15  ci, pages and release pipelines               DONE     0.3.0
   F16  packaging: curl installer, termux deb         DONE     0.3.0
 
+  0.3.1 fixes the first real CI run on github.
+
   all features landed. nothing is proven on real hardware yet,
   see TEST.md.
 
@@ -411,3 +413,75 @@ FEATURE PLAN
       console and docs extracted out of the archive at runtime,
       which is real complexity for no gain over the deb and the
       curl installer. Say the word if you still want it.
+
+
+0.3.1 - 2026-11-07
+------------------
+
+  first push to github, both pipelines failed. neither failure
+  was in the application code.
+
+  ci failed on python 3.9 only, 3.12 passed
+
+    * tools/check.sh used sys.stdlib_module_names for the
+      shadowing audit. That attribute arrived in python 3.10,
+      so the check itself crashed on the 3.9 matrix leg while
+      every other group passed.
+    * rewrote the audit to look for a same named .py file or
+      package directory inside sysconfig's stdlib path, plus
+      sys.builtin_module_names for the C modules. Works on any
+      version and is more accurate, since it reflects the
+      actual install rather than a static list. Verified it
+      still catches queue, time and sys as collisions.
+
+  the 3.9 leg should never have existed
+
+    * yt-dlp requires python >= 3.11 and ytmusicapi >= 3.10, so
+      the app cannot run on 3.9 at all. Testing it there proved
+      nothing.
+    * matrix is now 3.11, 3.12 and 3.13.
+    * the floor is now enforced where it matters rather than
+      only in CI: install.sh refuses to continue, with the
+      pkg upgrade hint; bin/termux_setup.sh exits 1; the wizard
+      shows python as its own [ ok ] / [ no ] row with the
+      reason; check.sh fails early; SETUP.md and README say so.
+
+  pages failed because Pages was never switched on
+
+    * the site built and the OWNER/REPO substitution worked.
+      actions/configure-pages then returned "Get Pages site
+      failed ... verify that the repository has Pages enabled".
+    * passing enablement: true makes the workflow create the
+      Pages site itself, so there is no settings click to
+      remember and anyone cloning this gets the same behaviour.
+
+  every action was behind, and warning about it
+
+    * the runner warned that actions targeting Node 20 are
+      deprecated and being forced onto Node 24.
+    * checked the current release of each action and bumped:
+      checkout v4 to v7, setup-python v5 to v7,
+      upload-artifact v4 to v7, configure-pages v5 to v6,
+      upload-pages-artifact v3 to v5, deploy-pages v4 to v5,
+      action-gh-release v2 to v3.
+
+  also fixed, found while testing the tarball
+
+    * ytalexa status piped into head printed a BrokenPipeError
+      traceback, then exited 120 from python flushing stdout at
+      shutdown. The wizard output helper now swallows a closed
+      pipe and the cli flushes through a guard, so piping into
+      head or grep exits 0 quietly.
+    * the console Docs tab listed only VERSION and README.
+      SETUP.md and TEST.md were missing. All eight documents
+      are listed now.
+
+  checked by hand
+
+    * check.sh passes every group, including the new python
+      version group
+    * the rewritten shadow audit catches a deliberate queue
+      collision and reports my own modules clean
+    * all three workflows still parse as yaml after the bumps
+    * wizard dependency step shows the python row correctly
+    * status, help and version all exit 0 when piped to head

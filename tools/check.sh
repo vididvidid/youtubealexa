@@ -9,6 +9,18 @@ hdr() { printf '\n== %s\n' "$1"; }
 bad() { printf '   FAIL %s\n' "$1"; FAIL=$((FAIL+1)); }
 good() { printf '   ok   %s\n' "$1"; }
 
+hdr "python version"
+if python3 -c "
+import sys
+assert sys.version_info >= (3, 11), (
+    'need python 3.11 or newer, yt-dlp requires it, got %d.%d'
+    % (sys.version_info[0], sys.version_info[1]))
+" 2>/tmp/pyver.err; then
+  good "$(python3 --version)"
+else
+  bad "python too old"; cat /tmp/pyver.err
+fi
+
 hdr "python compiles"
 if python3 -m py_compile src/*.py bin/*.py api/*.py tools/*.py \
    2>/tmp/pyc.err; then
@@ -104,9 +116,21 @@ fi
 
 hdr "stdlib shadowing"
 if python3 -c "
-import sys, os
+import os
+import sys
+import sysconfig
+std = sysconfig.get_paths()['stdlib']
 names = [n[:-3] for n in os.listdir('src') if n.endswith('.py')]
-hit = [n for n in names if n in sys.stdlib_module_names]
+hit = []
+for n in names:
+    if n in sys.builtin_module_names:
+        hit.append(n)
+        continue
+    if os.path.isfile(os.path.join(std, n + '.py')):
+        hit.append(n)
+        continue
+    if os.path.isdir(os.path.join(std, n)):
+        hit.append(n)
 assert len(hit) == 0, 'shadows stdlib: ' + ', '.join(hit)
 " 2>/tmp/shadow.err; then
   good "no module shadows the stdlib"

@@ -22,8 +22,9 @@ WZ_C = {
     "c": "\033[36m"
 }
 
+WZ_PY_MIN = (3, 11)
+
 WZ_DEPS = [
-    ["python3", ["python3", "--version"]],
     ["openssl", ["openssl", "version"]],
     ["yt-dlp", ["yt-dlp", "--version"]],
     ["ffmpeg", ["ffmpeg", "-version"]]
@@ -106,7 +107,21 @@ def port_up(port):
     return 0
 
 
+def py_ok():
+    if sys.version_info >= WZ_PY_MIN:
+        return 1
+    return 0
+
+
+def py_str():
+    return "%d.%d.%d" % (sys.version_info[0],
+                         sys.version_info[1],
+                         sys.version_info[2])
+
+
 def st_deps():
+    if py_ok() == 0:
+        return 0
     i = 0
     while i < len(WZ_DEPS):
         rc, txt = run(WZ_DEPS[i][1], 20)
@@ -186,6 +201,12 @@ def do_deps():
     out("")
     out(c("b", "checking dependencies"))
     bad = 0
+    out("  %s %-12s %s" % (mark(py_ok()), "python",
+                           py_str()))
+    if py_ok() == 0:
+        bad = bad + 1
+        out(c("y", "       yt-dlp needs 3.11 or newer"))
+        out(c("y", "       try: pkg upgrade python"))
     i = 0
     while i < len(WZ_DEPS):
         name = WZ_DEPS[i][0]

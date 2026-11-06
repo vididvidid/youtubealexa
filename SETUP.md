@@ -28,6 +28,11 @@ A1. Install Termux
 From F-Droid or the GitHub releases page. NOT the Play Store,
 that build is deprecated and will fail.
 
+Needs Python 3.11 or newer, because yt-dlp requires it. A
+current Termux gives you that. If yours is old:
+
+  pkg upgrade python
+
   https://f-droid.org/packages/com.termux/
 
 Install these two from the same place as well:

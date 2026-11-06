@@ -82,8 +82,9 @@ Or without installing:
 
   python3 bin/serve.py
 
-Needs python3, openssl, yt-dlp and ytmusicapi. The console
-itself is stdlib only.
+Needs python 3.11 or newer, because yt-dlp requires it, plus
+openssl, yt-dlp and ytmusicapi. The console itself is stdlib
+only.
 
 The admin token is generated on first start and printed to the
 terminal every time the server starts. Open the console at

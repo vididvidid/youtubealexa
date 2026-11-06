@@ -49,7 +49,13 @@ else
     die "install python3 first"
   fi
 fi
-say "      ok"
+if ! python3 -c 'import sys; sys.exit(0 if sys.version_info >= \
+  (3, 11) else 1)' 2>/dev/null; then
+  die "python 3.11 or newer is required, yt-dlp needs it.
+    you have $(python3 --version 2>&1)
+    on termux: pkg upgrade python"
+fi
+say "      $(python3 --version 2>&1)"
 
 say "[2/6] installing yt-dlp and ytmusicapi"
 PIPQ="--disable-pip-version-check -q"

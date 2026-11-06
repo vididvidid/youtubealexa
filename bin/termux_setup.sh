@@ -17,6 +17,12 @@ pip install --upgrade yt-dlp ytmusicapi || exit 1
 
 echo "[4/6] checking versions"
 python3 --version
+if ! python3 -c 'import sys; sys.exit(0 if sys.version_info >= \
+  (3, 11) else 1)' 2>/dev/null; then
+  echo "  ERROR python 3.11 or newer is required"
+  echo "  yt-dlp needs it. try: pkg upgrade python"
+  exit 1
+fi
 yt-dlp --version
 openssl version
 python3 -c "import ytmusicapi; print('ytmusicapi ok')"
