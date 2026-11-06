@@ -90,6 +90,37 @@ def qu_set(user, items):
     return st
 
 
+def qu_extend(user, items):
+    st = qu_load(user)
+    have = {}
+    i = 0
+    while i < len(st["items"]):
+        have[st["items"][i]["vid"]] = 1
+        i = i + 1
+    rows = []
+    i = 0
+    while i < len(st["items"]):
+        rows.append(st["items"][i])
+        i = i + 1
+    add = 0
+    i = 0
+    while i < len(items):
+        e = items[i]
+        i = i + 1
+        if type(e) != dict:
+            continue
+        v = e.get("vid")
+        if type(v) != str or v in have:
+            continue
+        have[v] = 1
+        rows.append(e)
+        add = add + 1
+    st["items"] = qu_trim(rows)
+    if qu_save(user, st) != 0:
+        log.log_add("err", "queue", "extend save failed")
+    return add, st
+
+
 def qu_at(st, i):
     if i < 0:
         return None

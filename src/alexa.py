@@ -165,38 +165,55 @@ def ax_clear_dir():
             "clearBehavior": "CLEAR_ALL"}
 
 
-def ax_fetch_at(user, st, idx, c):
-    tries = 0
-    while tries < AX_TRY:
-        e = qu.qu_at(st, idx)
-        if e == None:
-            return None, idx
-        rc, err = au.au_get(e["vid"], c)
-        if rc == 0:
-            return e, idx
-        log.log_add("wrn", "alexa", "skip %s: %s"
-                    % (e["vid"], err))
-        idx = idx + 1
-        tries = tries + 1
-    return None, idx
+def ax_pick_at(st, idx):
+    e = qu.qu_at(st, idx)
+    if e == None:
+        return None, idx
+    return e, idx
 
 
-def ax_prefetch(user, idx, c):
-    def run():
-        st = qu.qu_load(user)
-        e = qu.qu_at(st, idx)
-        if e != None:
-            au.au_get(e["vid"], c)
-        au.au_evict(c["cache_max_mb"])
-    if c["prefetch"] != 1:
-        return
-    t = threading.Thread(target=run)
+def ax_bg(fn):
+    t = threading.Thread(target=fn)
     t.daemon = True
     t.start()
 
 
+def ax_warm(user, idx, c, force):
+    def run():
+        st = qu.qu_load(user)
+        n = 0
+        while n < 2:
+            e = qu.qu_at(st, idx + n)
+            n = n + 1
+            if e == None:
+                break
+            au.au_get(e["vid"], c)
+        au.au_evict(c["cache_max_mb"])
+    if c["prefetch"] != 1 and force == 0:
+        return
+    ax_bg(run)
+
+
+def ax_prefetch(user, idx, c):
+    ax_warm(user, idx, c, 0)
+
+
+def ax_fill(user, vid, rows, c):
+    def run():
+        radio, rerr = yr.yr_radio(vid, c["queue_len"])
+        if rerr != None or radio == None or len(radio) == 0:
+            log.log_add("wrn", "alexa", "no radio for %s"
+                        % vid)
+            return
+        items = yr.yr_merge(rows, radio, c["queue_len"])
+        add, st = qu.qu_extend(user, items)
+        log.log_add("inf", "alexa", "radio added %d, queue %d"
+                    % (add, len(st["items"])))
+    ax_bg(run)
+
+
 def ax_start(req, user, st, idx, off, c, loc, behav):
-    e, idx = ax_fetch_at(user, st, idx, c)
+    e, idx = ax_pick_at(st, idx)
     if e == None:
         return ax_rsp(sp.sp_get(loc, "failed"), None, True, None)
     qu.qu_seek(user, st, idx, off)
@@ -206,7 +223,7 @@ def ax_start(req, user, st, idx, off, c, loc, behav):
     tok = qu.qu_tok(idx, e["vid"])
     d = ax_play_dir(url, tok, off, behav, "", e["title"],
                     e["chan"])
-    ax_prefetch(user, idx + 1, c)
+    ax_warm(user, idx, c, 1)
     say = sp.sp_get(loc, "playing")
     if c["say_title"] == 1 and e["title"] != "":
         nm = sp.sp_title(e["title"], AX_SAY_MAX)
@@ -244,11 +261,10 @@ def ax_do_play(req, user, rq, c, loc):
     if rows == None or len(rows) == 0:
         return ax_ask(loc, "notfound")
     seed = rows[0]
-    radio, rerr = yr.yr_radio(seed["vid"], c["queue_len"])
-    items = yr.yr_merge(rows, radio, c["queue_len"])
-    st = qu.qu_set(user, items)
-    log.log_add("inf", "alexa", "query %r -> queue %d"
-                % (q[:52], len(items)))
+    st = qu.qu_set(user, rows)
+    log.log_add("inf", "alexa", "query %r -> seed %d"
+                % (q[:52], len(rows)))
+    ax_fill(user, seed["vid"], rows, c)
     return ax_start(req, user, st, 0, 0, c, loc, "REPLACE_ALL")
 
 
@@ -315,7 +331,7 @@ def ax_evt_near(req, user, rq, c, loc):
         return ax_rsp(None, None, True, None)
     st = qu.qu_load(user)
     nxt = idx + 1
-    e, nxt = ax_fetch_at(user, st, nxt, c)
+    e, nxt = ax_pick_at(st, nxt)
     if e == None:
         return ax_rsp(None, None, True, None)
     base = ax_base(req, c)
@@ -325,8 +341,32 @@ def ax_evt_near(req, user, rq, c, loc):
     prev = qu.qu_tok(idx, vid)
     d = ax_play_dir(url, tok, 0, "ENQUEUE", prev, e["title"],
                     e["chan"])
-    ax_prefetch(user, nxt + 1, c)
+    ax_warm(user, nxt, c, 1)
     log.log_add("inf", "alexa", "enqueue idx=%d %s"
+                % (nxt, e["vid"]))
+    return ax_rsp(None, None, True, [d])
+
+
+def ax_evt_skip(req, user, rq, c, loc):
+    idx, vid = qu.qu_untok(rq.get("token"))
+    if idx < 0:
+        return ax_rsp(None, None, True, None)
+    st = qu.qu_load(user)
+    nxt = idx + 1
+    if nxt - idx > AX_TRY:
+        return ax_rsp(None, None, True, None)
+    e, nxt = ax_pick_at(st, nxt)
+    if e == None:
+        return ax_rsp(None, None, True, None)
+    qu.qu_seek(user, st, nxt, 0)
+    base = ax_base(req, c)
+    url = base + au.au_url(e["vid"], c["url_ttl"],
+                           c["hmac_secret"])
+    tok = qu.qu_tok(nxt, e["vid"])
+    d = ax_play_dir(url, tok, 0, "REPLACE_ALL", "", e["title"],
+                    e["chan"])
+    ax_warm(user, nxt, c, 1)
+    log.log_add("inf", "alexa", "skipping to idx=%d %s"
                 % (nxt, e["vid"]))
     return ax_rsp(None, None, True, [d])
 
@@ -352,8 +392,9 @@ def ax_evt(req, user, rq, c, loc):
     if typ == "AudioPlayer.PlaybackFailed":
         er = ax_dict(rq, "error")
         log.log_add("err", "alexa", "playback failed: %s %s"
-                    % (er.get("type"), str(er.get("message"))[:90]))
-        return ax_rsp(None, None, True, None)
+                    % (er.get("type"),
+                       str(er.get("message"))[:90]))
+        return ax_evt_skip(req, user, rq, c, loc)
     return ax_rsp(None, None, True, None)
 
 

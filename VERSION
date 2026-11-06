@@ -1010,3 +1010,94 @@ FEATURE PLAN
   new SETUP.md B7 covers all of it, the old B7 is B8, and
   TEST.md phase 5 opens with the same three checks so they
   get done before anyone debugs the server.
+
+
+0.5.0 - 2026-11-07
+------------------
+
+  the Echo reached the skill, the skill did everything right,
+  and Alexa threw the answer away. From his logs:
+
+    03:58:40 search 'लग जा गले'
+    03:58:42 radio -> 50 tracks
+    03:58:49 audio  fetched APDPELjn9g8 3977 KiB in 7.1s
+    03:58:49 alexa  play idx=0
+    03:58:50 err alexa session error INVALID_RESPONSE
+
+  nine seconds from request to reply. Alexa gives a skill
+  eight. The INVALID_RESPONSE line only exists because 0.4.2
+  started logging the error payload on SessionEndedRequest,
+  which is the one piece of luck here.
+
+  the mistake
+
+    * ax_start called ax_fetch_at, which called au_get, which
+      ran yt-dlp to completion before the response was built.
+      Downloading four megabytes inside a request that has an
+      eight second budget was never going to work. It passed
+      in the simulator because the simulator has no deadline.
+    * ax_do_play also built the radio queue inline, another
+      two seconds, for tracks not needed until the first song
+      is nearly over.
+    * so the hard deadline was being spent on two things that
+      did not need to be in the request at all.
+
+  fixed
+
+    * nothing downloads on the voice path now. ax_pick_at
+      reads the queue entry and returns. The signed url goes
+      back immediately; the bytes are fetched when the Echo
+      asks for them, on the /audio route, which is an
+      ordinary http fetch with no eight second rule.
+    * ax_warm starts the current and next track in the
+      background as soon as the reply is sent, so by the time
+      the Echo follows the url the file is usually already
+      there or well under way.
+    * ax_fill builds the radio queue in the background and
+      qu_extend appends it without disturbing idx or off.
+      The first reply now carries the search results only,
+      which is all that is needed to start playing.
+    * measured here: search alone is 1.58s. That is the whole
+      remaining request path, against a budget of 8.
+
+  what was given up, and what replaced it
+
+    * ax_fetch_at used to skip up to three unplayable videos
+      by downloading each one to find out. That check cost
+      the deadline, so it is gone.
+    * instead PlaybackFailed now advances. ax_evt_skip reads
+      the failing token, picks the next entry and returns a
+      REPLACE_ALL for it. A dead video costs a hiccup rather
+      than a download, and the Echo is the one that finds out
+      it is dead, which is where that discovery belongs.
+
+  so it cannot come back
+
+    * check.sh parses alexa.py and walks the ast of every
+      request path function: ax_start, ax_do_play, ax_do_step,
+      ax_do_resume, ax_evt_near, ax_evt_skip, ax_intent,
+      ax_route, ax_pick_at, ax_launch, ax_ask. If any of them
+      references au_get, yr_radio, yr_merge or au_evict
+      anywhere other than inside a nested background
+      function, the build fails and says which one, and that
+      alexa allows eight seconds.
+    * ys_search is deliberately not on that list. It has to
+      be in the request, it is the reason there is a reply at
+      all, and at 1.6s it fits.
+
+  checked by hand
+
+    * qu_extend adds only new vids, keeps idx and off, keeps
+      order, is idempotent, ignores junk rows and caps at
+      QU_MAX
+    * the guard catches a real regression: it failed first
+      run and named ax_do_play
+    * selftest is 128 assertions, up from 118
+    * full check.sh passes
+
+  still unproven
+
+    * whether the Echo waits long enough on /audio for a
+      cold track. If it does not, the next move is to stream
+      the file as it downloads rather than after, which is a
+      bigger change and is not worth making on a guess.

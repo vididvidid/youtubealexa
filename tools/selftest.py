@@ -343,6 +343,42 @@ def t_app_id():
        ax.ax_app_ok({}, {"skill_id": good}), -1)
 
 
+def t_queue_fill():
+    grp("background queue fill")
+    u = "user-fill"
+    seed = [{"vid": "aaaaaaaaaaa", "title": "one",
+             "chan": "c", "dur": 100},
+            {"vid": "bbbbbbbbbbb", "title": "two",
+             "chan": "c", "dur": 100}]
+    st = qu.qu_set(u, seed)
+    ok("seed stored", len(st["items"]), 2)
+    qu.qu_seek(u, st, 1, 4200)
+    radio = [{"vid": "bbbbbbbbbbb", "title": "dup",
+              "chan": "c", "dur": 100},
+             {"vid": "ccccccccccc", "title": "three",
+              "chan": "c", "dur": 100}]
+    add, st2 = qu.qu_extend(u, radio)
+    ok("only new rows added", add, 1)
+    ok("queue grew", len(st2["items"]), 3)
+    ok("position kept", st2["idx"], 1)
+    ok("offset kept", st2["off"], 4200)
+    ok("order kept", st2["items"][0]["vid"], "aaaaaaaaaaa")
+    ok("new row at the end", st2["items"][2]["vid"],
+       "ccccccccccc")
+    add, st3 = qu.qu_extend(u, [{"vid": "ccccccccccc"}])
+    ok("idempotent", add, 0)
+    add, st4 = qu.qu_extend(u, [{"nope": 1}, "junk"])
+    ok("junk ignored", add, 0)
+    big = []
+    i = 0
+    while i < 200:
+        big.append({"vid": "z%010d" % i, "title": "t",
+                    "chan": "c", "dur": 10})
+        i = i + 1
+    add, st5 = qu.qu_extend(u, big)
+    ok("capped at QU_MAX", len(st5["items"]), qu.QU_MAX)
+
+
 def t_cfg():
     grp("config")
     c = cfg.cfg_load()
@@ -389,6 +425,7 @@ def main():
     t_elicit()
     t_title()
     t_app_id()
+    t_queue_fill()
     t_cfg()
     t_speak()
     sys.stdout.write("\n%s\n" % ("-" * 46))

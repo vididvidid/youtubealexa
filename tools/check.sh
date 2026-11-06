@@ -134,6 +134,40 @@ else
   bad "model problem"; cat /tmp/model.err
 fi
 
+hdr "voice path does no blocking io"
+if python3 -c "
+import ast
+src = open('src/alexa.py').read()
+tree = ast.parse(src)
+hot = ['ax_start','ax_do_play','ax_do_step','ax_do_resume',
+       'ax_evt_near','ax_evt_skip','ax_intent','ax_route',
+       'ax_pick_at','ax_launch','ax_ask']
+slow = ['au_get','yr_radio','au_evict','yr_merge']
+tops = {}
+for n in tree.body:
+    if isinstance(n, ast.FunctionDef):
+        tops[n.name] = n
+for name in hot:
+    assert name in tops, 'missing function ' + name
+    for sub in ast.walk(tops[name]):
+        if not isinstance(sub, ast.Attribute):
+            continue
+        if sub.attr not in slow:
+            continue
+        inner = 0
+        for f in ast.walk(tops[name]):
+            if isinstance(f, ast.FunctionDef) and f.name != name:
+                for g in ast.walk(f):
+                    if g is sub:
+                        inner = 1
+        assert inner == 1, name + ' calls ' + sub.attr + \
+            ' on the request path; alexa allows 8 seconds'
+" 2>/tmp/hot.err; then
+  good "no download or radio call blocks a voice reply"
+else
+  bad "blocking call on the voice path"; cat /tmp/hot.err
+fi
+
 hdr "no unresolved placeholders"
 PAT="OWNER[/]REPO"
 P=$(grep -rlE "$PAT" --include='*.md' --include='*.sh' \
