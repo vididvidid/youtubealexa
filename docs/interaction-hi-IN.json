@@ -25,7 +25,7 @@
           ]
         },
         {
-          "name": "AMAZON.NextIntent",
+          "name": "NextSongIntent",
           "samples": [
             "अगला गाना",
             "अगला गाना बजाओ",
@@ -37,14 +37,11 @@
             "दूसरा गाना बजाओ",
             "गाना बदलो",
             "यह गाना बदलो",
-            "आगे बढ़ाओ",
-            "अगला",
-            "next song",
-            "skip this song"
+            "आगे बढ़ाओ"
           ]
         },
         {
-          "name": "AMAZON.PreviousIntent",
+          "name": "PrevSongIntent",
           "samples": [
             "पिछला गाना",
             "पिछला गाना बजाओ",
@@ -54,29 +51,41 @@
             "पीछे वाला गाना बजाओ",
             "पहले वाला गाना",
             "पहले वाला गाना बजाओ",
-            "पीछे जाओ",
-            "पिछला",
-            "previous song"
+            "पीछे जाओ"
           ]
         },
         {
-          "name": "AMAZON.PauseIntent",
+          "name": "PauseSongIntent",
           "samples": [
             "गाना रोको",
             "ज़रा रोको",
-            "थोड़ी देर रोको",
-            "रोको"
+            "थोड़ी देर रोको"
           ]
         },
         {
-          "name": "AMAZON.ResumeIntent",
+          "name": "ResumeSongIntent",
           "samples": [
             "गाना चालू करो",
-            "चालू करो",
             "आगे चलाओ",
             "वहीं से चलाओ",
             "फिर से चालू करो"
           ]
+        },
+        {
+          "name": "AMAZON.NextIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.PreviousIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.PauseIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.ResumeIntent",
+          "samples": []
         },
         {
           "name": "AMAZON.StopIntent",
@@ -117,12 +126,30 @@
             "मदद करो"
           ]
         },
-        { "name": "AMAZON.NavigateHomeIntent", "samples": [] },
-        { "name": "AMAZON.FallbackIntent", "samples": [] },
-        { "name": "AMAZON.LoopOnIntent", "samples": [] },
-        { "name": "AMAZON.LoopOffIntent", "samples": [] },
-        { "name": "AMAZON.ShuffleOnIntent", "samples": [] },
-        { "name": "AMAZON.ShuffleOffIntent", "samples": [] }
+        {
+          "name": "AMAZON.NavigateHomeIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.LoopOnIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.LoopOffIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.ShuffleOnIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.ShuffleOffIntent",
+          "samples": []
+        }
       ],
       "types": []
     },

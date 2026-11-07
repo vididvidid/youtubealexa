@@ -108,22 +108,39 @@ need = ['AMAZON.PauseIntent','AMAZON.ResumeIntent',
 have = [i['name'] for i in lm['intents']]
 for n in need:
     assert n in have, 'missing ' + n
-voice = ['AMAZON.NextIntent','AMAZON.PreviousIntent',
-         'AMAZON.PauseIntent','AMAZON.ResumeIntent',
-         'AMAZON.StopIntent']
 by = {}
 for i in lm['intents']:
     by[i['name']] = i
+noext = ['AMAZON.NextIntent','AMAZON.PreviousIntent',
+         'AMAZON.PauseIntent','AMAZON.ResumeIntent',
+         'AMAZON.FallbackIntent',
+         'AMAZON.NavigateHomeIntent']
+for n in noext:
+    assert len(by[n]['samples']) == 0, \
+        n + ' cannot be extended with samples'
+voice = ['NextSongIntent','PrevSongIntent',
+         'PauseSongIntent','ResumeSongIntent']
 for n in voice:
+    assert n in by, 'missing custom intent ' + n
     sm = by[n]['samples']
     assert len(sm) >= 3, n + ' needs hindi samples'
+    dev = 0
     for x in sm:
         assert '{' not in x, n + ' sample has a slot'
-dev = 0
-for x in by['AMAZON.NextIntent']['samples']:
-    if ord(x[0]) > 2300:
-        dev = 1
-assert dev == 1, 'next intent has no devanagari sample'
+        if ord(x[0]) > 2300:
+            dev = 1
+    assert dev == 1, n + ' has no devanagari sample'
+seen = {}
+for i in lm['intents']:
+    for x in i['samples']:
+        if '{' in x:
+            continue
+        assert x not in seen, 'utterance in two intents: ' + x
+        seen[x] = i['name']
+src = open('src/alexa.py', encoding='utf-8').read()
+q = chr(34)
+for n in voice:
+    assert q + n + q in src, n + ' not routed in alexa.py'
 inv = lm['invocationName']
 assert len(inv.split()) >= 2, 'invocation name needs two words'
 for w in [u'\u0917\u093e\u0928\u093e', u'\u0938\u0902\u0917\u0940\u0924',

@@ -417,8 +417,16 @@ def ax_intent(req, user, rq, c, loc):
         return ax_do_play(req, user, rq, c, loc)
     if name == "AMAZON.NextIntent":
         return ax_do_step(req, user, c, loc, 1)
+    if name == "NextSongIntent":
+        return ax_do_step(req, user, c, loc, 1)
     if name == "AMAZON.PreviousIntent":
         return ax_do_step(req, user, c, loc, -1)
+    if name == "PrevSongIntent":
+        return ax_do_step(req, user, c, loc, -1)
+    if name == "PauseSongIntent":
+        return ax_halt(req, user, c, loc)
+    if name == "ResumeSongIntent":
+        return ax_do_resume(req, user, c, loc)
     if name == "AMAZON.StartOverIntent":
         return ax_do_step(req, user, c, loc, 0)
     if name == "AMAZON.ResumeIntent":

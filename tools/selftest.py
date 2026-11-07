@@ -366,15 +366,38 @@ def t_control():
         by[lm["intents"][i]["name"]] = lm["intents"][i]
         i = i + 1
     ok("next has samples",
-       len(by["AMAZON.NextIntent"]["samples"]) >= 3, True)
+       len(by["NextSongIntent"]["samples"]) >= 3, True)
     ok("prev has samples",
-       len(by["AMAZON.PreviousIntent"]["samples"]) >= 3, True)
+       len(by["PrevSongIntent"]["samples"]) >= 3, True)
     ok("next sample is modelled",
-       'अगला गाना' in by["AMAZON.NextIntent"]["samples"], True)
+       'अगला गाना' in by["NextSongIntent"]["samples"], True)
     ok("prev sample is modelled",
-       'पिछला गाना' in by["AMAZON.PreviousIntent"]["samples"], True)
+       'पिछला गाना' in by["PrevSongIntent"]["samples"], True)
     ok("fallback takes no samples",
        len(by["AMAZON.FallbackIntent"]["samples"]), 0)
+    noext = ["AMAZON.NextIntent", "AMAZON.PreviousIntent",
+             "AMAZON.PauseIntent", "AMAZON.ResumeIntent"]
+    i = 0
+    while i < len(noext):
+        ok("%s stays bare" % noext[i],
+           len(by[noext[i]]["samples"]), 0)
+        i = i + 1
+    seen = {}
+    dup = 0
+    i = 0
+    while i < len(lm["intents"]):
+        sm = lm["intents"][i]["samples"]
+        i = i + 1
+        j = 0
+        while j < len(sm):
+            x = sm[j]
+            j = j + 1
+            if "{" in x:
+                continue
+            if x in seen:
+                dup = 1
+            seen[x] = 1
+    ok("no utterance in two intents", dup, 0)
 
 
 def t_cut():

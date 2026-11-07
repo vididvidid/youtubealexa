@@ -1192,3 +1192,63 @@ FEATURE PLAN
   back when Amazon Music wins an utterance. There is no API
   for it. Teaching her to include the invocation name is the
   only thing that works.
+
+
+0.6.1 - 2026-11-07
+------------------
+
+  the 0.6.0 model does not build. Four warnings from the India
+  locale, one per intent:
+
+    The built-in intent "AMAZON.PauseIntent" cannot be
+    extended with custom sample utterances.
+
+  same for ResumeIntent, NextIntent and PreviousIntent. I had
+  asserted in 0.6.0 that built in intents accept extra samples
+  and wrote that into the docs. It is true of most of them and
+  false of exactly the four that matter here, which are the
+  four I needed. Stop, Cancel, StartOver, Repeat and Help were
+  not flagged and keep their samples.
+
+  * the Hindi phrases moved to four custom intents declared
+    beside the built in ones: NextSongIntent, PrevSongIntent,
+    PauseSongIntent, ResumeSongIntent. ax_intent routes each
+    to the same handler the AMAZON equivalent already used, so
+    whichever one the NLU picks lands in the same place. The
+    AMAZON four stay declared and empty: Audio Player requires
+    them, and they still contribute their own stock hi-IN
+    utterances.
+
+  * dropped from the moved samples: the bare single words
+    "अगला", "पिछला", "रोको", and the English "next song",
+    "previous song", "skip this song". A sample may not appear
+    in two intents, and those short forms are the likeliest to
+    already exist inside Amazon's stock utterance set for the
+    built in intent, where a collision is a build error rather
+    than a warning. The multi word phrases carrying a verb are
+    the ones that were actually failing, because those are
+    what collide with "{query} बजाओ" in PlayIntent.
+
+  * check.sh now encodes the rule instead of the guess. It
+    asserts the six non-extendable intents carry zero samples,
+    asserts the four custom intents exist with Devanagari
+    samples, asserts no utterance appears in two intents, and
+    greps src/alexa.py to confirm each custom intent is
+    actually routed. Verified by putting a sample back on
+    AMAZON.NextIntent: the build fails with "cannot be
+    extended with samples".
+
+  * the first version of that guard passed silently because
+    the double quotes in its string literal were eaten by the
+    shell before python saw them. chr(34) now.
+
+  * ALEXA-SKILL.md had this backwards in two places and says
+    the right thing now, with the list of six and the mapping
+    from custom intent to handler.
+
+  * selftest 153 -> 158.
+
+  this is the second time a claim about the Alexa model turned
+  out to be wrong only at Build Model, after the invocation
+  name collision in 0.4.0. Both were things no local check
+  could have caught, and both are now local checks.

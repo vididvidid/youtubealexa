@@ -143,6 +143,12 @@ StartOver, LoopOn, LoopOff, ShuffleOn, ShuffleOff, Repeat. The
 server answers all of them. Loop and shuffle are acknowledged
 politely rather than implemented.
 
+Four of them cannot carry custom sample utterances, so the
+Hindi phrases live on the four custom intents listed under
+"Adding your own command" above. Both spellings reach the same
+handler, so it does not matter which one Alexa decides to
+send.
+
 
 What she can say
 ----------------
@@ -174,9 +180,36 @@ Adding your own command
 Two places have to agree, and the order matters.
 
 1. docs/interaction-hi-IN.json, under the intent you want to
-   extend, add the phrase to its "samples" list. Built in
-   intents accept extra samples; AMAZON.FallbackIntent and
-   AMAZON.NavigateHomeIntent do not, leave those empty.
+   extend, add the phrase to its "samples" list.
+
+   Six built in intents reject custom samples outright and the
+   build fails with "cannot be extended with custom sample
+   utterances":
+
+     AMAZON.NextIntent       AMAZON.PauseIntent
+     AMAZON.PreviousIntent   AMAZON.ResumeIntent
+     AMAZON.FallbackIntent   AMAZON.NavigateHomeIntent
+
+   The first four are the ones you actually want to extend, so
+   this skill declares its own intents beside them and routes
+   both to the same handler:
+
+     NextSongIntent    -> ax_do_step forward
+     PrevSongIntent    -> ax_do_step back
+     PauseSongIntent   -> ax_halt
+     ResumeSongIntent  -> ax_do_resume
+
+   Put new next and previous phrases on those, not on the
+   AMAZON ones. The AMAZON ones stay declared and empty,
+   because Audio Player requires them and they still bring
+   their own stock Hindi utterances.
+
+   Stop, Cancel, StartOver, Repeat and Help do accept custom
+   samples, so phrases for those go straight on the built in
+   intent.
+
+   No utterance may appear in two intents. The build rejects a
+   duplicate, and check.sh rejects it first.
 
 2. Save and Build Model in the developer console. Nothing
    changes on the device until the build finishes.
