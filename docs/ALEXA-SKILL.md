@@ -17,8 +17,8 @@ that a YouTube scraping skill will never get.
 
 What you can have, with the invocation name below:
 
-  one shot    "अलेक्सा, अंश का बाजा से लग जा गले बजाओ"
-  two turn    "अलेक्सा, अंश का बाजा"
+  one shot    "अलेक्सा, अंश का पिटारा से लग जा गले बजाओ"
+  two turn    "अलेक्सा, अंश का पिटारा"
               "क्या सुनना है?"
               "लग जा गले"
 
@@ -60,9 +60,26 @@ Open the JSON Editor and paste the file next to this one:
 
   docs/interaction-hi-IN.json
 
-Invocation name is "अंश का बाजा", Ansh's music box. A
-personal name carries a real advantage here: no part of it is
-a word Alexa already listens for.
+Invocation name is "अंश का पिटारा", Ansh's treasure box.
+A personal name plus an ordinary object: no part of it is a
+word Alexa already listens for.
+
+The name before it, "अंश का बाजा", failed on a real device
+while working perfectly in the simulator, which is worth
+understanding. The simulator takes typed text. The Echo has to
+hear the name, and "बाजा" is a musical instrument, sitting
+inside the vocabulary Alexa's music domain listens to. Spoken,
+it was either claimed by that domain or split in the wrong
+place: "अंश का बाजा खोलो" was parsed as the invocation
+"अंश का" plus the song request "बाजा खोलो", and the skill
+dutifully searched for and played a song called "Tu Dhol Baja
+Languriya Dil Khol Baja Languriya".
+
+So a name passing in the simulator proves nothing about the
+device. check.sh rejects गाना, गाने, संगीत, बाजा, बाजे,
+डीजे, धुन, रेडियो, म्यूजिक, music, song, radio, dj,
+play and tune inside an invocation name.
+
 It is deliberately not a word for "song" or "music". Amazon
 requires at least two words, and separately requires that a
 name not collide with Alexa's built in features. A name like
@@ -108,7 +125,7 @@ is set the server accepts any correctly signed Alexa request.
 Use the Test tab in the developer console, set it to Hindi, and
 type:
 
-  अंश का बाजा खोलो
+  अंश का पिटारा खोलो
 
 You should get "नमस्ते, क्या सुनना है?" back. Then:
 
@@ -153,12 +170,22 @@ send.
 What she can say
 ----------------
 
+The short way in is a Routine, described in SETUP.md: she says
+one word, "डीजे", and the routine speaks the invocation name
+for her. A Routine trigger may be a single word; an invocation
+name may not, which is why the two are different strings.
+
+On launch the skill resumes what was cut off, else resumes the
+queue from earlier, else plays default_query from the Config
+tab, else asks. So "अलेक्सा, डीजे" starts music rather than
+starting a conversation, as long as default_query is set.
+
 Every line below assumes the music is already playing, or that
 the skill is open. The wake word is whatever the Echo is set
 to; "अलेक्सा" is written here for brevity.
 
-  start a song   "अलेक्सा, अंश का बाजा से लग जा गले बजाओ"
-  open the skill "अलेक्सा, अंश का बाजा"  -> it asks, she answers
+  start a song   "अलेक्सा, अंश का पिटारा से लग जा गले बजाओ"
+  open the skill "अलेक्सा, अंश का पिटारा"  -> it asks, she answers
   next song      "अगला गाना"  "अगला गाना बजाओ"  "गाना बदलो"
   previous song  "पिछला गाना"  "पीछे वाला गाना"
   from the top   "शुरू से बजाओ"
@@ -252,7 +279,7 @@ What actually reduces the collisions:
   Fewer providers means fewer phrases Alexa claims.
 
   Keep the invocation name in every request that starts
-  music. "अंश का बाजा से X बजाओ" is routed by the name. A bare
+  music. "अंश का पिटारा से X बजाओ" is routed by the name. A bare
   "X बजाओ" with no skill open is routed by Alexa's guess, and
   Amazon Music usually wins it.
 

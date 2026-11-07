@@ -284,7 +284,9 @@ def t_elicit():
     ok("two word name", len(inv.split()) >= 2, True)
     bad = ["\u0917\u093e\u0928\u093e",
            "\u0938\u0902\u0917\u0940\u0924",
-           "music", "song"]
+           "\u092c\u093e\u091c\u093e",
+           "\u0921\u0940\u091c\u0947",
+           "music", "song", "dj"]
     hit = 0
     i = 0
     while i < len(bad):
@@ -428,6 +430,28 @@ def t_cut():
        True)
 
 
+def t_launch():
+    grp("launch starts music")
+    import cfg
+    c = cfg.cfg_load()
+    ok("launch_play on by default", c["launch_play"], 1)
+    ok("no default query shipped", c["default_query"], "")
+    ok("ax_seed exists", hasattr(ax, "ax_seed"), True)
+    u = "user-launch"
+    rows = [{"vid": "kkkkkkkkkkk", "title": "k", "chan": "c",
+             "dur": 100},
+            {"vid": "lllllllllll", "title": "l", "chan": "c",
+             "dur": 100}]
+    st = qu.qu_set(u, rows)
+    qu.qu_mark(u, st, 1, 12000, 0, 0)
+    st = qu.qu_load(u)
+    ok("queue survives for resume",
+       qu.qu_cur(st)["vid"], "lllllllllll")
+    ok("offset kept", st["off"], 12000)
+    st = qu.qu_new()
+    ok("empty queue has no current", qu.qu_cur(st), None)
+
+
 def t_queue_fill():
     grp("background queue fill")
     u = "user-fill"
@@ -513,6 +537,7 @@ def main():
     t_queue_fill()
     t_control()
     t_cut()
+    t_launch()
     t_cfg()
     t_speak()
     sys.stdout.write("\n%s\n" % ("-" * 46))

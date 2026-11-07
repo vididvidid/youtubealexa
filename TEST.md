@@ -150,7 +150,7 @@ PHASE 4  ALEXA SKILL
 
   Developer console Test tab, language Hindi:
 
-  [ ] type "अंश का बाजा खोलो"
+  [ ] type "अंश का पिटारा खोलो"
       expected reply: नमस्ते, क्या सुनना है?
   [ ] JSON Input and JSON Output panels are NOT empty
       this is the one that matters. Empty panels mean the
@@ -193,7 +193,7 @@ for it in the skill store, it is not there and never will be.
       Games, Your Skills, Dev tab, it is listed with a DEV
       badge
 
-  [ ] "अलेक्सा, अंश का बाजा"            -> she asks what to play
+  [ ] "अलेक्सा, अंश का पिटारा"            -> she asks what to play
   [ ] "लग जा गले"                     -> audio actually starts
   [ ] time from speaking to first sound: ____ seconds
       under 8 is good, over 12 means the fetch is slow
@@ -213,9 +213,9 @@ for it in the skill store, it is not there and never will be.
       from the one you asked for by name
   [ ] "अलेक्सा, रोको"                 -> stops
   [ ] "अलेक्सा, बंद करो"             -> stops
-  [ ] "अलेक्सा, अंश का बाजा" then "चालू करो" -> resumes
+  [ ] "अलेक्सा, अंश का पिटारा" then "चालू करो" -> resumes
 
-  [ ] one shot form: "अलेक्सा, अंश का बाजा से लग जा गले बजाओ"
+  [ ] one shot form: "अलेक्सा, अंश का पिटारा से लग जा गले बजाओ"
 
   Sharing the speaker with Amazon Music:
 
@@ -225,7 +225,7 @@ for it in the skill store, it is not there and never will be.
       for something: "अलेक्सा, कुछ बजाओ"
       -> our music stops, theirs starts. Expected, and not
       fixable from the skill
-  [ ] then "अलेक्सा, अंश का बाजा"
+  [ ] then "अलेक्सा, अंश का पिटारा"
       -> says "गाना बीच में रुक गया था। वहीं से आगे।" and picks
       up the same song where it was cut. Check the log for a
       "playback cut off at" line and a "resuming after cut"

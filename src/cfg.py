@@ -30,7 +30,9 @@ CFG_DEF = {
     "transcode": 0,
     "fetch_tmo": 90,
     "sig_ca": "",
-    "say_title": 1
+    "say_title": 1,
+    "launch_play": 1,
+    "default_query": ""
 }
 
 CFG_SECRETS = ["admin_token", "hmac_secret"]

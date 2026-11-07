@@ -180,7 +180,7 @@ It is also on the docs website if that is easier to copy from
 a phone. Then Save Model, then Build Model, and wait for the
 build to finish.
 
-The invocation name is "अंश का बाजा". Pick a replacement with
+The invocation name is "अंश का पिटारा". Pick a replacement with
 care if you change it. Amazon rejects single word names, and a
 name that reads like an ordinary music request never reaches
 your skill at all: Alexa's own music domain answers first. The
@@ -195,15 +195,37 @@ is deliberate: a name built from a person's name shares no
 word with anything Alexa already listens for, so the music
 domain never claims it.
 
-If even that is a mouthful, a Routine gives you a shorter
-phrase. Alexa app, More, Routines, plus sign; When This
-Happens, Voice, type the phrase she will actually say, for
-example "गाना बजाओ"; Add Action, Custom, type "अंश का बाजा खोलो".
-Save. She then says "अलेक्सा, गाना बजाओ" and the routine speaks
-the real invocation for her. One caveat worth testing on the
-device: a routine that opens a skill may or may not leave the
-microphone open for her to answer "कौन सा गाना सुनना है?". If it
-does not, the one shot form is the one to teach her instead.
+She never has to say it, though. A Routine turns any short
+phrase into the real invocation, and a Routine trigger may be
+a single word where an invocation name may not:
+
+  Alexa app, More, Routines, plus sign.
+  When This Happens, Voice, type what she will say: डीजे
+  Add Action, Custom, type: अंश का पिटारा खोलो
+  Save.
+
+She says "अलेक्सा, डीजे" and the routine speaks the real
+name for her. The invocation name becomes plumbing: it only
+has to be safe, not memorable.
+
+For that to start music rather than ask a question, the skill
+needs somewhere to start from. On launch it will:
+
+  resume, if it was cut off mid song, and say so
+  resume, if there is a queue from earlier
+  play default_query, if one is set in the Config tab
+  otherwise ask "कौन सा गाना सुनना है?"
+
+So set default_query in the console Config tab to whatever she
+should get when there is nothing to resume, for example
+"लता मंगेशकर के पुराने गाने". Leave it empty and a cold
+"डीजे" asks her a question instead, which is the thing the
+Routine was meant to avoid. Set launch_play to 0 if you would
+rather it always ask.
+
+One caveat worth testing on the device: a Routine whose action
+opens a skill may or may not leave the microphone open for a
+follow up. With default_query set it does not need to.
 
 For the full list of what she can say once it is playing, and
 for how to add your own phrases, see docs/ALEXA-SKILL.md.
@@ -252,7 +274,7 @@ B6. Test in the console
 Developer console, Test tab. Switch it from Off to Development.
 Set the language selector to Hindi. Type:
 
-  अंश का बाजा खोलो
+  अंश का पिटारा खोलो
 
 Expected reply: नमस्ते, क्या सुनना है?
 
@@ -357,7 +379,7 @@ B8. The real thing
 
 Say to the Echo:
 
-  "अलेक्सा, अंश का बाजा"
+  "अलेक्सा, अंश का पिटारा"
   "क्या सुनना है?"
   "लग जा गले"
 

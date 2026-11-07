@@ -143,8 +143,13 @@ for n in voice:
     assert q + n + q in src, n + ' not routed in alexa.py'
 inv = lm['invocationName']
 assert len(inv.split()) >= 2, 'invocation name needs two words'
-for w in [u'\u0917\u093e\u0928\u093e', u'\u0938\u0902\u0917\u0940\u0924',
-          'music', 'song', 'radio']:
+bad = [u'\u0917\u093e\u0928\u093e', u'\u0917\u093e\u0928\u0947',
+       u'\u0938\u0902\u0917\u0940\u0924', u'\u092c\u093e\u091c\u093e',
+       u'\u092c\u093e\u091c\u0947', u'\u0921\u0940\u091c\u0947',
+       u'\u0927\u0941\u0928', u'\u0930\u0947\u0921\u093f\u092f\u094b',
+       u'\u092e\u094d\u092f\u0942\u091c\u093f\u0915',
+       'music', 'song', 'radio', 'dj', 'play', 'tune']
+for w in bad:
     assert w not in inv.lower(), 'invocation name collides: ' + w
 im = d['interactionModel']
 dlg = im['dialog']['intents']
@@ -175,7 +180,7 @@ tree = ast.parse(src)
 hot = ['ax_start','ax_do_play','ax_do_step','ax_do_resume',
        'ax_evt_near','ax_evt_skip','ax_intent','ax_route',
        'ax_pick_at','ax_launch','ax_ask','ax_halt',
-       'ax_ctl','ax_words']
+       'ax_ctl','ax_words','ax_seed']
 slow = ['au_get','yr_radio','au_evict','yr_merge']
 tops = {}
 for n in tree.body:

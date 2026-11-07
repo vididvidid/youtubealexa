@@ -1,7 +1,7 @@
 {
   "interactionModel": {
     "languageModel": {
-      "invocationName": "अंश का बाजा",
+      "invocationName": "अंश का पिटारा",
       "intents": [
         {
           "name": "PlayIntent",

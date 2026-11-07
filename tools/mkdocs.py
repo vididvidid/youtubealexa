@@ -273,7 +273,7 @@ def index_page(pages, ver):
 served from an old Android phone over Termux. No YouTube Data
 API. Your mother says a line from a song and it plays, then
 keeps going with a YouTube Music radio queue.</p>
-<pre>"अलेक्सा, अंश का बाजा"
+<pre>"अलेक्सा, अंश का पिटारा"
 "क्या सुनना है?"
 "लग जा गले"</pre>
 <h2 id="install">Install</h2>

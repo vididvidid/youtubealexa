@@ -1252,3 +1252,75 @@ FEATURE PLAN
   out to be wrong only at Build Model, after the invocation
   name collision in 0.4.0. Both were things no local check
   could have caught, and both are now local checks.
+
+
+0.7.0 - 2026-11-07
+------------------
+
+  "अंश का बाजा" works in the simulator and fails on the Echo.
+  Both of his tests passed when typed:
+
+    अंश का बाजा        -> नमस्ते, क्या सुनना है?
+    अंश का बाजा खोलो   -> Tu Dhol Baja Languriya. बजा रही हूँ।
+
+  the second one is the whole story. He asked it to OPEN and
+  it played a song, because Alexa split the sentence as the
+  invocation "अंश का" plus the request "बाजा खोलो", searched
+  for "baja kholo", and found a song whose title happens to
+  contain both words. On the device, speaking it, the same
+  name either got claimed by the music domain outright or
+  produced "मुझे नहीं पता इसमें आपकी मदद कैसे की जाए".
+
+  the simulator takes typed text and runs no speech
+  recognition, so a name passing there proves nothing about
+  the device. That is now written down, because I did not know
+  it when I chose the name.
+
+  "बाजा" is a musical instrument. The check.sh guard that
+  screens invocation names for music words has existed since
+  0.4.0 and I approved a name that breaks it, having read only
+  the first word.
+
+  * invocation name is "अंश का पिटारा", Ansh's treasure box.
+    Verified against the guard alongside the two names it must
+    reject:
+
+      अंश का बाजा     collides: बाजा
+      अंश का डीजे     collides: डीजे
+      अंश का पिटारा   accepted
+
+  * the banned word list grew to गाना, गाने, संगीत, बाजा, बाजे,
+    डीजे, धुन, रेडियो, म्यूजिक, music, song, radio, dj, play,
+    tune.
+
+  * he wants to say "अलेक्सा, डीजे" and have music start. An
+    invocation name may not be one word, so डीजे cannot be the
+    name; a Routine trigger may be, so डीजे becomes the trigger
+    and the Routine speaks the real name. The invocation name
+    stops being something anyone says out loud and only has to
+    be safe.
+
+  * for that to start music instead of a conversation,
+    LaunchRequest no longer always asks. In order: resume if
+    cut off mid song and say so, else resume the existing
+    queue, else play default_query, else ask. Two new config
+    keys, launch_play defaulting to 1 and default_query
+    defaulting to empty. Empty means a cold "डीजे" still asks,
+    which is the thing the Routine was meant to avoid, so
+    SETUP.md says to set it.
+
+  * ax_seed is the search-and-play half of ax_do_play, pulled
+    out so launch can use it without duplicating the queue
+    setup. It is on the hot list in check.sh; ys_search stays
+    the one blocking call allowed on the voice path.
+
+  * all four launch states verified by simulation: cold asks,
+    queue resumes, cut resumes with the notice in front of the
+    title, launch_play=0 asks regardless.
+
+  * selftest 158 -> 164.
+
+  not done, on purpose: no default_query shipped with a value.
+  Whose songs play when there is nothing to resume is his
+  mother's taste, not mine, and a wrong guess is worse than a
+  question.

@@ -341,6 +341,17 @@ def ax_launch(req, user, c, loc):
         return ax_start(req, user, st, st["idx"], st["off"], c,
                         loc, "REPLACE_ALL",
                         sp.sp_get(loc, "cut"))
+    if c["launch_play"] != 1:
+        return ax_ask(loc, "welcome")
+    if qu.qu_cur(st) != None:
+        log.log_add("inf", "alexa", "launch resumes idx=%d"
+                    % st["idx"])
+        return ax_start(req, user, st, st["idx"], st["off"], c,
+                        loc, "REPLACE_ALL", "")
+    if c["default_query"] != "":
+        log.log_add("inf", "alexa", "launch seeds %r"
+                    % c["default_query"][:40])
+        return ax_seed(req, user, c["default_query"], c, loc)
     return ax_ask(loc, "welcome")
 
 
@@ -352,6 +363,24 @@ def ax_slot(rq):
     if type(v) != str:
         return ""
     return v.strip()
+
+
+def ax_seed(req, user, q, c, loc):
+    rows, err = ys.ys_search(q, c["search_lang"],
+                             c["search_region"],
+                             c["search_want"], c["min_dur"],
+                             c["max_dur"])
+    if err != None:
+        return ax_rsp(sp.sp_get(loc, "failed"), None, True, None)
+    if rows == None or len(rows) == 0:
+        return ax_ask(loc, "notfound")
+    seed = rows[0]
+    st = qu.qu_set(user, rows)
+    log.log_add("inf", "alexa", "query %r -> seed %d"
+                % (q[:52], len(rows)))
+    ax_fill(user, seed["vid"], rows, c)
+    return ax_start(req, user, st, 0, 0, c, loc, "REPLACE_ALL",
+                    "")
 
 
 def ax_do_play(req, user, rq, c, loc):
@@ -368,21 +397,7 @@ def ax_do_play(req, user, rq, c, loc):
         return ax_do_step(req, user, c, loc, -1)
     if k == 3:
         return ax_halt(req, user, c, loc)
-    rows, err = ys.ys_search(q, c["search_lang"],
-                             c["search_region"],
-                             c["search_want"], c["min_dur"],
-                             c["max_dur"])
-    if err != None:
-        return ax_rsp(sp.sp_get(loc, "failed"), None, True, None)
-    if rows == None or len(rows) == 0:
-        return ax_ask(loc, "notfound")
-    seed = rows[0]
-    st = qu.qu_set(user, rows)
-    log.log_add("inf", "alexa", "query %r -> seed %d"
-                % (q[:52], len(rows)))
-    ax_fill(user, seed["vid"], rows, c)
-    return ax_start(req, user, st, 0, 0, c, loc, "REPLACE_ALL",
-                    "")
+    return ax_seed(req, user, q, c, loc)
 
 
 def ax_do_step(req, user, c, loc, delta):
