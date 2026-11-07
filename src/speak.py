@@ -22,9 +22,14 @@ SP_TAB = {
                   "हुई। प्र"
                   "यास पुनः "
                   "कीजिये।",
-        "nomore": "सूड़ी "
-                  "खत्म हो "
-                  "गई।",
+        "nomore": "गानों की "
+                  "सूची खत्म "
+                  "हो गई।",
+        "cut": "गाना बीच "
+               "में रुक "
+               "गया था। "
+               "वहीं से "
+               "आगे।",
         "help": "कोई भी "
                 "गाना या "
                 "उसकी लाइ"
@@ -46,6 +51,7 @@ SP_TAB = {
         "notfound": "I could not find that. Try another song.",
         "failed": "I could not fetch that one. Please try again.",
         "nomore": "That is the end of the list.",
+        "cut": "The song was interrupted.",
         "help": "Say any song name or a line from it and I "
                 "will play it.",
         "bye": "Okay.",

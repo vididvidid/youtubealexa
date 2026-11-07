@@ -15,6 +15,96 @@ AX_INTENT = "PlayIntent"
 AX_TRY = 3
 AX_SAY_MAX = 48
 AX_PATH = "/audio/"
+AX_PUNC = ".,!?\u0964 "
+
+AX_FILL = [
+    "\u092c\u091c\u093e\u0913", "\u0932\u0917\u093e\u0913",
+    "\u0938\u0941\u0928\u093e\u0913", "\u091c\u0930\u093e",
+    "\u091a\u0932\u093e\u0913", "\u0915\u0930\u094b",
+    "\u0917\u093e\u0928\u093e", "\u0917\u093e\u0928\u0947",
+    "\u0935\u093e\u0932\u093e", "\u0935\u093e\u0932\u0940",
+    "\u091c\u093c\u0930\u093e", "\u092f\u0939",
+    "\u092f\u0947", "\u0926\u094b",
+    "play", "song", "the", "this",
+]
+
+AX_NEXT = [
+    "\u0905\u0917\u0932\u093e", "\u0905\u0917\u0932\u0940",
+    "\u092c\u0926\u0932\u094b", "\u0926\u0942\u0938\u0930\u093e",
+    "next", "skip",
+]
+
+AX_PREV = [
+    "\u092a\u093f\u091b\u0932\u093e",
+    "\u092a\u093f\u091b\u0932\u0940",
+    "\u092a\u0940\u091b\u0947", "\u092a\u0939\u0932\u0947",
+    "previous", "back",
+]
+
+AX_HALT = [
+    "\u0930\u094b\u0915\u094b", "\u0930\u094b\u0915",
+    "\u092c\u0902\u0926", "\u0930\u0941\u0915\u094b",
+    "\u091a\u0941\u092a", "\u092c\u0938",
+    "stop", "pause",
+]
+
+
+def ax_has(tab, w):
+    i = 0
+    while i < len(tab):
+        if tab[i] == w:
+            return 1
+        i = i + 1
+    return 0
+
+
+def ax_words(q):
+    out = []
+    raw = q.lower().split()
+    i = 0
+    while i < len(raw):
+        w = raw[i]
+        i = i + 1
+        while len(w) > 0 and w[len(w) - 1] in AX_PUNC:
+            w = w[:len(w) - 1]
+        while len(w) > 0 and w[0] in AX_PUNC:
+            w = w[1:]
+        if w == "":
+            continue
+        if ax_has(AX_FILL, w) == 1:
+            continue
+        out.append(w)
+    return out
+
+
+def ax_ctl(q):
+    ws = ax_words(q)
+    if len(ws) == 0 or len(ws) > 3:
+        return 0
+    nx = 0
+    pv = 0
+    ht = 0
+    i = 0
+    while i < len(ws):
+        w = ws[i]
+        i = i + 1
+        if ax_has(AX_NEXT, w) == 1:
+            nx = 1
+            continue
+        if ax_has(AX_PREV, w) == 1:
+            pv = 1
+            continue
+        if ax_has(AX_HALT, w) == 1:
+            ht = 1
+            continue
+        return 0
+    if ht == 1:
+        return 3
+    if pv == 1:
+        return 2
+    if nx == 1:
+        return 1
+    return 0
 
 
 def ax_dict(node, key):
@@ -212,11 +302,11 @@ def ax_fill(user, vid, rows, c):
     ax_bg(run)
 
 
-def ax_start(req, user, st, idx, off, c, loc, behav):
+def ax_start(req, user, st, idx, off, c, loc, behav, lead):
     e, idx = ax_pick_at(st, idx)
     if e == None:
         return ax_rsp(sp.sp_get(loc, "failed"), None, True, None)
-    qu.qu_seek(user, st, idx, off)
+    qu.qu_mark(user, st, idx, off, 0, 0)
     base = ax_base(req, c)
     url = base + au.au_url(e["vid"], c["url_ttl"],
                            c["hmac_secret"])
@@ -229,12 +319,28 @@ def ax_start(req, user, st, idx, off, c, loc, behav):
         nm = sp.sp_title(e["title"], AX_SAY_MAX)
         if nm != "":
             say = nm + ". " + say
+    if lead != "":
+        say = lead + " " + say
     log.log_add("inf", "alexa", "play idx=%d %s %r"
                 % (idx, e["vid"], e["title"][:52]))
     return ax_rsp(say, None, True, [d])
 
 
+def ax_halt(req, user, c, loc):
+    st = qu.qu_load(user)
+    if qu.qu_cur(st) != None:
+        qu.qu_flag(user, st, "own", 1)
+    return ax_rsp(None, None, True, [ax_stop_dir()])
+
+
 def ax_launch(req, user, c, loc):
+    st = qu.qu_load(user)
+    if st["cut"] == 1 and qu.qu_cur(st) != None:
+        log.log_add("inf", "alexa", "resuming after cut at %d"
+                    % st["off"])
+        return ax_start(req, user, st, st["idx"], st["off"], c,
+                        loc, "REPLACE_ALL",
+                        sp.sp_get(loc, "cut"))
     return ax_ask(loc, "welcome")
 
 
@@ -252,6 +358,16 @@ def ax_do_play(req, user, rq, c, loc):
     q = ax_slot(rq)
     if q == "":
         return ax_ask(loc, "huh")
+    k = ax_ctl(q)
+    if k != 0:
+        log.log_add("inf", "alexa", "control %r -> %d"
+                    % (q[:32], k))
+    if k == 1:
+        return ax_do_step(req, user, c, loc, 1)
+    if k == 2:
+        return ax_do_step(req, user, c, loc, -1)
+    if k == 3:
+        return ax_halt(req, user, c, loc)
     rows, err = ys.ys_search(q, c["search_lang"],
                              c["search_region"],
                              c["search_want"], c["min_dur"],
@@ -265,7 +381,8 @@ def ax_do_play(req, user, rq, c, loc):
     log.log_add("inf", "alexa", "query %r -> seed %d"
                 % (q[:52], len(rows)))
     ax_fill(user, seed["vid"], rows, c)
-    return ax_start(req, user, st, 0, 0, c, loc, "REPLACE_ALL")
+    return ax_start(req, user, st, 0, 0, c, loc, "REPLACE_ALL",
+                    "")
 
 
 def ax_do_step(req, user, c, loc, delta):
@@ -276,10 +393,11 @@ def ax_do_step(req, user, c, loc, delta):
     if idx < 0:
         idx = 0
     if idx >= len(st["items"]):
+        qu.qu_flag(user, st, "own", 1)
         return ax_rsp(sp.sp_get(loc, "nomore"), None, True,
                       [ax_stop_dir()])
     return ax_start(req, user, st, idx, 0, c, loc,
-                    "REPLACE_ALL")
+                    "REPLACE_ALL", "")
 
 
 def ax_do_resume(req, user, c, loc):
@@ -287,7 +405,7 @@ def ax_do_resume(req, user, c, loc):
     if qu.qu_cur(st) == None:
         return ax_ask(loc, "welcome")
     return ax_start(req, user, st, st["idx"], st["off"], c,
-                    loc, "REPLACE_ALL")
+                    loc, "REPLACE_ALL", "")
 
 
 def ax_intent(req, user, rq, c, loc):
@@ -306,11 +424,11 @@ def ax_intent(req, user, rq, c, loc):
     if name == "AMAZON.ResumeIntent":
         return ax_do_resume(req, user, c, loc)
     if name == "AMAZON.PauseIntent":
-        return ax_rsp(None, None, True, [ax_stop_dir()])
+        return ax_halt(req, user, c, loc)
     if name == "AMAZON.StopIntent":
-        return ax_rsp(None, None, True, [ax_stop_dir()])
+        return ax_halt(req, user, c, loc)
     if name == "AMAZON.CancelIntent":
-        return ax_rsp(None, None, True, [ax_stop_dir()])
+        return ax_halt(req, user, c, loc)
     if name == "AMAZON.HelpIntent":
         return ax_ask(loc, "help")
     if name == "AMAZON.FallbackIntent":
@@ -381,13 +499,27 @@ def ax_evt(req, user, rq, c, loc):
     if typ == "AudioPlayer.PlaybackStarted":
         idx, vid = qu.qu_untok(rq.get("token"))
         if idx >= 0:
+            st = qu.qu_load(user)
+            qu.qu_mark(user, st, idx, 0, 0, 0)
             ax_prefetch(user, idx + 1, c)
+        return ax_rsp(None, None, True, None)
+    if typ == "AudioPlayer.PlaybackFinished":
+        idx, vid = qu.qu_untok(rq.get("token"))
+        if idx >= 0:
+            st = qu.qu_load(user)
+            qu.qu_mark(user, st, idx, 0, 0, 0)
         return ax_rsp(None, None, True, None)
     if typ == "AudioPlayer.PlaybackStopped":
         idx, vid = qu.qu_untok(rq.get("token"))
         if idx >= 0:
             st = qu.qu_load(user)
-            qu.qu_seek(user, st, idx, off)
+            cut = 1
+            if st["own"] == 1:
+                cut = 0
+            qu.qu_mark(user, st, idx, off, cut, 0)
+            if cut == 1:
+                log.log_add("wrn", "alexa",
+                            "playback cut off at %d ms" % off)
         return ax_rsp(None, None, True, None)
     if typ == "AudioPlayer.PlaybackFailed":
         er = ax_dict(rq, "error")
@@ -433,7 +565,7 @@ def ax_route(req):
     if typ == "PlaybackController.PlayCommandIssued":
         return ax_do_resume(req, user, c, loc)
     if typ == "PlaybackController.PauseCommandIssued":
-        return ax_rsp(None, None, True, [ax_stop_dir()])
+        return ax_halt(req, user, c, loc)
     if typ == "SessionEndedRequest":
         rsn = rq.get("reason")
         if rsn == "ERROR":

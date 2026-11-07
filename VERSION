@@ -1101,3 +1101,94 @@ FEATURE PLAN
       cold track. If it does not, the next move is to stream
       the file as it downloads rather than after, which is a
       bigger change and is not worth making on a guess.
+
+
+0.6.0 - 2026-11-07
+------------------
+
+  renamed again, and two real bugs behind "agla gana does not
+  work properly". He reported three things: the rename, next
+  and previous being unreliable, and Amazon Music stealing the
+  speaker with no warning.
+
+  * invocation name is now "अंश का बाजा", Ansh's music box. A
+    personal name shares no word with Alexa's music domain, so
+    unlike "मेरा गाना" it cannot be claimed before the skill is
+    considered, and unlike "सुरीली पेटी" it is a name his mother
+    already says every day. Docs, tests and the check guard
+    follow the rename. The old names stay in this log because
+    the log records what was true at the time.
+
+  * BUG: the playing index never moved when the queue advanced
+    by itself. AudioPlayer.PlaybackStarted only warmed the
+    cache; it never wrote idx back to the state file, and a
+    track that ends naturally sends PlaybackFinished, not
+    PlaybackStopped, so nothing else wrote it either. After the
+    first auto-advance, st["idx"] was still 0 while song two
+    was audible. "अगला गाना" then computed 0+1 and replayed the
+    song already playing, and "पिछला गाना" computed 0-1, clamped
+    to 0, and also landed on something she had just heard.
+    Exactly the "not working perfectly" he described. Both
+    PlaybackStarted and PlaybackFinished now commit the index
+    taken from the directive token, so idx is always the track
+    the speaker is actually on.
+
+  * BUG: "अगला गाना बजाओ" was being searched as a song. The
+    built in playback intents carried no samples at all, so
+    they relied entirely on Amazon's stock hi-IN utterances,
+    while PlayIntent advertised "{query} बजाओ". The NLU matched
+    the longer, more specific pattern and sent query="अगला गाना"
+    to search. Next, Previous, Pause, Resume, Stop, Cancel,
+    StartOver, Repeat and Help now carry explicit Hindi
+    samples, and check.sh fails the build if the five playback
+    ones lose them.
+
+  * second line of defence for the same class of mistake:
+    ax_ctl in src/alexa.py. If every word of an incoming
+    PlayIntent query is either a filler word or a control word
+    it is routed as the control instead of a search. Word lists
+    are AX_FILL, AX_NEXT, AX_PREV, AX_HALT. The all-words rule
+    is what keeps it safe: "बस इतना सा ख्वाब" still searches as a
+    song even though "बस" alone means stop. Adding a word here
+    needs no model rebuild.
+
+  * Amazon Music cannot be disabled. It belongs to the account,
+    not to a list of apps, and no setting removes it. Nor can
+    the skill warn at the moment it takes over: a reply to an
+    AudioPlayer event may not contain speech, and a skill
+    cannot speak unprompted. So the warning had to move to the
+    other side of the interruption.
+
+    qu state gained two flags. "own" is set when the skill
+    itself asks playback to stop, so an expected stop can be
+    told apart from an unexpected one. On PlaybackStopped,
+    stopped-without-own means cut=1, logged as "playback cut
+    off at N ms". The next LaunchRequest sees cut=1, says
+    "गाना बीच में रुक गया था। वहीं से आगे।" and resumes from the saved
+    offset instead of asking what to play. One sentence and her
+    place back, rather than silence. A deliberate "बंद करो"
+    sets own first, so it does not trigger the notice.
+
+  * ax_start takes a lead string so the notice can be spoken
+    ahead of the track title in one response.
+
+  * fixed a typo in the Hindi string for the end of the queue:
+    "सूड़ी" was not a word. Now "गानों की सूची खत्म हो गई।".
+
+  * docs/ALEXA-SKILL.md gained three sections: every phrase she
+    can say, how to add a command and which of the two places
+    to add it to, and what can and cannot be done about sharing
+    the speaker with Amazon Music. SETUP.md gained the Routine
+    recipe for a shorter trigger phrase. TEST.md Phase 5 gained
+    the index checks, which are written to be run after letting
+    the queue auto-advance, because that was the state the bug
+    needed to show itself.
+
+  * selftest 128 -> 153 assertions: t_control covers the phrase
+    classifier in both scripts and the model samples, t_cut
+    covers flag persistence and clearing.
+
+  not done, on purpose: no attempt to grab the music domain
+  back when Amazon Music wins an utterance. There is no API
+  for it. Teaching her to include the invocation name is the
+  only thing that works.

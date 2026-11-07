@@ -343,6 +343,68 @@ def t_app_id():
        ax.ax_app_ok({}, {"skill_id": good}), -1)
 
 
+def t_control():
+    grp("control phrases in the query slot")
+    import json
+    ok("agla gana", ax.ax_ctl('अगला गाना'), 1)
+    ok("agla gana bajao", ax.ax_ctl('अगला गाना बजाओ'), 1)
+    ok("pichla gana bajao", ax.ax_ctl('पिछला गाना बजाओ'), 2)
+    ok("gana band karo", ax.ax_ctl('गाना बंद करो'), 3)
+    ok("next song", ax.ax_ctl("next song"), 1)
+    ok("previous song", ax.ax_ctl("previous song"), 2)
+    ok("real song passes", ax.ax_ctl('लग जा गले'), 0)
+    ok("stop word inside title", ax.ax_ctl('बस इतना सा ख्वाब'), 0)
+    ok("empty query", ax.ax_ctl(""), 0)
+    ok("long query", ax.ax_ctl("a b c d e"), 0)
+    mp = os.path.join(ROOT, "docs",
+                      "interaction-hi-IN.json")
+    m = json.load(io.open(mp, encoding="utf-8"))
+    lm = m["interactionModel"]["languageModel"]
+    by = {}
+    i = 0
+    while i < len(lm["intents"]):
+        by[lm["intents"][i]["name"]] = lm["intents"][i]
+        i = i + 1
+    ok("next has samples",
+       len(by["AMAZON.NextIntent"]["samples"]) >= 3, True)
+    ok("prev has samples",
+       len(by["AMAZON.PreviousIntent"]["samples"]) >= 3, True)
+    ok("next sample is modelled",
+       'अगला गाना' in by["AMAZON.NextIntent"]["samples"], True)
+    ok("prev sample is modelled",
+       'पिछला गाना' in by["AMAZON.PreviousIntent"]["samples"], True)
+    ok("fallback takes no samples",
+       len(by["AMAZON.FallbackIntent"]["samples"]), 0)
+
+
+def t_cut():
+    grp("interrupted playback")
+    u = "user-cut"
+    seed = [{"vid": "ddddddddddd", "title": "one",
+             "chan": "c", "dur": 100},
+            {"vid": "eeeeeeeeeee", "title": "two",
+             "chan": "c", "dur": 100}]
+    st = qu.qu_set(u, seed)
+    ok("fresh not cut", st["cut"], 0)
+    ok("fresh not owned", st["own"], 0)
+    qu.qu_mark(u, st, 1, 7000, 1, 0)
+    st = qu.qu_load(u)
+    ok("cut persists", st["cut"], 1)
+    ok("offset persists", st["off"], 7000)
+    ok("index persists", st["idx"], 1)
+    qu.qu_flag(u, st, "own", 1)
+    ok("own persists", qu.qu_load(u)["own"], 1)
+    qu.qu_mark(u, st, 1, 0, 0, 0)
+    ok("start clears cut", qu.qu_load(u)["cut"], 0)
+    ok("start clears own", qu.qu_load(u)["own"], 0)
+    ok("cut line exists",
+       sp.sp_get("hi-IN", "cut") != "", True)
+    ok("cut line differs from playing",
+       sp.sp_get("hi-IN", "cut") != sp.sp_get("hi-IN",
+                                              "playing"),
+       True)
+
+
 def t_queue_fill():
     grp("background queue fill")
     u = "user-fill"
@@ -426,6 +488,8 @@ def main():
     t_title()
     t_app_id()
     t_queue_fill()
+    t_control()
+    t_cut()
     t_cfg()
     t_speak()
     sys.stdout.write("\n%s\n" % ("-" * 46))

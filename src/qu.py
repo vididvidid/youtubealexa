@@ -22,6 +22,8 @@ def qu_new():
     st["items"] = []
     st["idx"] = 0
     st["off"] = 0
+    st["cut"] = 0
+    st["own"] = 0
     st["ts"] = int(time.time())
     return st
 
@@ -73,6 +75,10 @@ def qu_load(user):
         st["idx"] = 0
     if type(st.get("off")) != int:
         st["off"] = 0
+    if type(st.get("cut")) != int:
+        st["cut"] = 0
+    if type(st.get("own")) != int:
+        st["own"] = 0
     if type(st.get("ts")) != int:
         st["ts"] = 0
     if int(time.time()) - st["ts"] > QU_TTL:
@@ -152,6 +158,24 @@ def qu_seek(user, st, i, off):
         return None
     st["idx"] = i
     st["off"] = off
+    qu_save(user, st)
+    return e
+
+
+def qu_flag(user, st, key, val):
+    st[key] = val
+    qu_save(user, st)
+    return st
+
+
+def qu_mark(user, st, i, off, cut, own):
+    e = qu_at(st, i)
+    if e == None:
+        return None
+    st["idx"] = i
+    st["off"] = off
+    st["cut"] = cut
+    st["own"] = own
     qu_save(user, st)
     return e
 

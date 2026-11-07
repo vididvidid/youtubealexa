@@ -180,7 +180,7 @@ It is also on the docs website if that is easier to copy from
 a phone. Then Save Model, then Build Model, and wait for the
 build to finish.
 
-The invocation name is "सुरीली पेटी". Pick a replacement with
+The invocation name is "अंश का बाजा". Pick a replacement with
 care if you change it. Amazon rejects single word names, and a
 name that reads like an ordinary music request never reaches
 your skill at all: Alexa's own music domain answers first. The
@@ -189,6 +189,24 @@ earlier name "मेरा गाना" means "my song", so "अलेक्स
 Unlimited advert instead. The giveaway is the Test tab showing
 empty JSON Input and JSON Output panels, which means your
 endpoint was never called.
+
+The current name is a personal one, "Ansh's music box". That
+is deliberate: a name built from a person's name shares no
+word with anything Alexa already listens for, so the music
+domain never claims it.
+
+If even that is a mouthful, a Routine gives you a shorter
+phrase. Alexa app, More, Routines, plus sign; When This
+Happens, Voice, type the phrase she will actually say, for
+example "गाना बजाओ"; Add Action, Custom, type "अंश का बाजा खोलो".
+Save. She then says "अलेक्सा, गाना बजाओ" and the routine speaks
+the real invocation for her. One caveat worth testing on the
+device: a routine that opens a skill may or may not leave the
+microphone open for her to answer "कौन सा गाना सुनना है?". If it
+does not, the one shot form is the one to teach her instead.
+
+For the full list of what she can say once it is playing, and
+for how to add your own phrases, see docs/ALEXA-SKILL.md.
 
 
 B4. Endpoint
@@ -234,7 +252,7 @@ B6. Test in the console
 Developer console, Test tab. Switch it from Off to Development.
 Set the language selector to Hindi. Type:
 
-  सुरीली पेटी खोलो
+  अंश का बाजा खोलो
 
 Expected reply: नमस्ते, क्या सुनना है?
 
@@ -339,7 +357,7 @@ B8. The real thing
 
 Say to the Echo:
 
-  "अलेक्सा, सुरीली पेटी"
+  "अलेक्सा, अंश का बाजा"
   "क्या सुनना है?"
   "लग जा गले"
 

@@ -108,6 +108,22 @@ need = ['AMAZON.PauseIntent','AMAZON.ResumeIntent',
 have = [i['name'] for i in lm['intents']]
 for n in need:
     assert n in have, 'missing ' + n
+voice = ['AMAZON.NextIntent','AMAZON.PreviousIntent',
+         'AMAZON.PauseIntent','AMAZON.ResumeIntent',
+         'AMAZON.StopIntent']
+by = {}
+for i in lm['intents']:
+    by[i['name']] = i
+for n in voice:
+    sm = by[n]['samples']
+    assert len(sm) >= 3, n + ' needs hindi samples'
+    for x in sm:
+        assert '{' not in x, n + ' sample has a slot'
+dev = 0
+for x in by['AMAZON.NextIntent']['samples']:
+    if ord(x[0]) > 2300:
+        dev = 1
+assert dev == 1, 'next intent has no devanagari sample'
 inv = lm['invocationName']
 assert len(inv.split()) >= 2, 'invocation name needs two words'
 for w in [u'\u0917\u093e\u0928\u093e', u'\u0938\u0902\u0917\u0940\u0924',
@@ -141,7 +157,8 @@ src = open('src/alexa.py').read()
 tree = ast.parse(src)
 hot = ['ax_start','ax_do_play','ax_do_step','ax_do_resume',
        'ax_evt_near','ax_evt_skip','ax_intent','ax_route',
-       'ax_pick_at','ax_launch','ax_ask']
+       'ax_pick_at','ax_launch','ax_ask','ax_halt',
+       'ax_ctl','ax_words']
 slow = ['au_get','yr_radio','au_evict','yr_merge']
 tops = {}
 for n in tree.body:

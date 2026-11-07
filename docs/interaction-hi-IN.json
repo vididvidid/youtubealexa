@@ -1,7 +1,7 @@
 {
   "interactionModel": {
     "languageModel": {
-      "invocationName": "सुरीली पेटी",
+      "invocationName": "अंश का बाजा",
       "intents": [
         {
           "name": "PlayIntent",
@@ -24,21 +24,105 @@
             "put on {query}"
           ]
         },
-        { "name": "AMAZON.CancelIntent", "samples": [] },
-        { "name": "AMAZON.HelpIntent", "samples": [] },
-        { "name": "AMAZON.StopIntent", "samples": [] },
+        {
+          "name": "AMAZON.NextIntent",
+          "samples": [
+            "अगला गाना",
+            "अगला गाना बजाओ",
+            "अगला गाना लगाओ",
+            "अगला गाना सुनाओ",
+            "अगला गाना चलाओ",
+            "आगे वाला गाना",
+            "आगे वाला गाना बजाओ",
+            "दूसरा गाना बजाओ",
+            "गाना बदलो",
+            "यह गाना बदलो",
+            "आगे बढ़ाओ",
+            "अगला",
+            "next song",
+            "skip this song"
+          ]
+        },
+        {
+          "name": "AMAZON.PreviousIntent",
+          "samples": [
+            "पिछला गाना",
+            "पिछला गाना बजाओ",
+            "पिछला गाना लगाओ",
+            "पिछला गाना सुनाओ",
+            "पीछे वाला गाना",
+            "पीछे वाला गाना बजाओ",
+            "पहले वाला गाना",
+            "पहले वाला गाना बजाओ",
+            "पीछे जाओ",
+            "पिछला",
+            "previous song"
+          ]
+        },
+        {
+          "name": "AMAZON.PauseIntent",
+          "samples": [
+            "गाना रोको",
+            "ज़रा रोको",
+            "थोड़ी देर रोको",
+            "रोको"
+          ]
+        },
+        {
+          "name": "AMAZON.ResumeIntent",
+          "samples": [
+            "गाना चालू करो",
+            "चालू करो",
+            "आगे चलाओ",
+            "वहीं से चलाओ",
+            "फिर से चालू करो"
+          ]
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": [
+            "गाना बंद करो",
+            "बंद करो",
+            "बस बहुत हुआ",
+            "चुप हो जाओ"
+          ]
+        },
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": [
+            "रहने दो",
+            "कैंसिल करो"
+          ]
+        },
+        {
+          "name": "AMAZON.StartOverIntent",
+          "samples": [
+            "शुरू से बजाओ",
+            "शुरू से चलाओ",
+            "फिर से शुरू करो"
+          ]
+        },
+        {
+          "name": "AMAZON.RepeatIntent",
+          "samples": [
+            "यही गाना दोबारा",
+            "दोबारा बजाओ",
+            "वही गाना फिर से"
+          ]
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": [
+            "क्या क्या बोल सकते हैं",
+            "मदद करो"
+          ]
+        },
         { "name": "AMAZON.NavigateHomeIntent", "samples": [] },
         { "name": "AMAZON.FallbackIntent", "samples": [] },
-        { "name": "AMAZON.PauseIntent", "samples": [] },
-        { "name": "AMAZON.ResumeIntent", "samples": [] },
-        { "name": "AMAZON.NextIntent", "samples": [] },
-        { "name": "AMAZON.PreviousIntent", "samples": [] },
-        { "name": "AMAZON.StartOverIntent", "samples": [] },
         { "name": "AMAZON.LoopOnIntent", "samples": [] },
         { "name": "AMAZON.LoopOffIntent", "samples": [] },
         { "name": "AMAZON.ShuffleOnIntent", "samples": [] },
-        { "name": "AMAZON.ShuffleOffIntent", "samples": [] },
-        { "name": "AMAZON.RepeatIntent", "samples": [] }
+        { "name": "AMAZON.ShuffleOffIntent", "samples": [] }
       ],
       "types": []
     },

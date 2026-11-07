@@ -150,7 +150,7 @@ PHASE 4  ALEXA SKILL
 
   Developer console Test tab, language Hindi:
 
-  [ ] type "सुरीली पेटी खोलो"
+  [ ] type "अंश का बाजा खोलो"
       expected reply: नमस्ते, क्या सुनना है?
   [ ] JSON Input and JSON Output panels are NOT empty
       this is the one that matters. Empty panels mean the
@@ -193,7 +193,7 @@ for it in the skill store, it is not there and never will be.
       Games, Your Skills, Dev tab, it is listed with a DEV
       badge
 
-  [ ] "अलेक्सा, सुरीली पेटी"            -> she asks what to play
+  [ ] "अलेक्सा, अंश का बाजा"            -> she asks what to play
   [ ] "लग जा गले"                     -> audio actually starts
   [ ] time from speaking to first sound: ____ seconds
       under 8 is good, over 12 means the fetch is slow
@@ -203,10 +203,35 @@ for it in the skill store, it is not there and never will be.
   [ ] let it run 5 songs without touching anything
 
   [ ] "अलेक्सा, अगला गाना"            -> skips
+  [ ] skip twice in a row, then "पिछला गाना"
+      -> lands on the song before, not the one playing. If it
+      replays the current song the index is not tracking
+      playback; look for a "play idx=" line whose number did
+      not move
+  [ ] let the queue advance by itself once, THEN "अगला गाना"
+      -> must move forward from the song you can hear, not
+      from the one you asked for by name
   [ ] "अलेक्सा, रोको"                 -> stops
-  [ ] "अलेक्सा, सुरीली पेटी" then "चालू करो" -> resumes
+  [ ] "अलेक्सा, बंद करो"             -> stops
+  [ ] "अलेक्सा, अंश का बाजा" then "चालू करो" -> resumes
 
-  [ ] one shot form: "अलेक्सा, सुरीली पेटी से लग जा गले बजाओ"
+  [ ] one shot form: "अलेक्सा, अंश का बाजा से लग जा गले बजाओ"
+
+  Sharing the speaker with Amazon Music:
+
+  [ ] while a song is playing, say "अलेक्सा, मौसम कैसा है"
+      -> she answers, and the music comes back by itself
+  [ ] while a song is playing, deliberately ask Amazon Music
+      for something: "अलेक्सा, कुछ बजाओ"
+      -> our music stops, theirs starts. Expected, and not
+      fixable from the skill
+  [ ] then "अलेक्सा, अंश का बाजा"
+      -> says "गाना बीच में रुक गया था। वहीं से आगे।" and picks
+      up the same song where it was cut. Check the log for a
+      "playback cut off at" line and a "resuming after cut"
+      line
+  [ ] after a normal "बंद करो", opening the skill again does
+      NOT claim it was interrupted, it just asks what to play
 
   If audio never starts but the logs show "play idx=0", the
   Echo could not fetch the URL. Check: is the tunnel still up,
